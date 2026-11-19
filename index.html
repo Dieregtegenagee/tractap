@@ -1,0 +1,2162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>TRACTAP — Live DJ Song Requests</title>
+<meta name="description" content="Scan the DJ's code, request a song, vote up the crowd's favorites — live, from your phone.">
+
+<!-- Share previews (WhatsApp / Facebook / X / iMessage).
+     NOTE: most platforms need an ABSOLUTE image URL — replace the relative path below with
+     https://yourdomain.com/assets/share.png if previews don't show. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="TRACTAP — Live DJ Song Requests">
+<meta property="og:description" content="Scan the DJ's code, request a song, vote up the crowd's favorites — live, from your phone.">
+<meta property="og:image" content="assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TRACTAP — Live DJ Song Requests">
+<meta name="twitter:description" content="Scan the DJ's code, request a song, vote up the crowd's favorites — live, from your phone.">
+<meta name="twitter:image" content="assets/og-image.jpg">
+
+<!-- PWA / installability (used by PWABuilder / Bubblewrap to build the APK) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#08080d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TRACTAP">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Londrina+Shadow&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="config.js"></script>
+<style>
+  :root[data-theme="dark"]{
+    --bg:#08080d;
+    --bg-elev:#121220;
+    --bg-elev-2:#191a2b;
+    --border:rgba(255,255,255,0.09);
+    --text:#f5f3f8;
+    --text-dim:#9793a8;
+    --text-faint:#5e5b6f;
+    --magenta:#ff2e88;
+    --cyan:#00e5ff;
+    --amber:#ffc145;
+    --danger:#ff5c5c;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f2f7;
+    --bg-elev:#ffffff;
+    --bg-elev-2:#eeecf5;
+    --border:rgba(20,10,40,0.1);
+    --text:#16141f;
+    --text-dim:#5a5568;
+    --text-faint:#948fa3;
+    --magenta:#d6006b;
+    --cyan:#007a94;
+    --amber:#a56a00;
+    --danger:#c92a2a;
+    --shadow: 0 20px 50px -25px rgba(30,10,50,0.25);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, color-mix(in srgb, var(--magenta) 14%, transparent), transparent 45%),
+      radial-gradient(circle at 85% 15%, color-mix(in srgb, var(--cyan) 12%, transparent), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    transition:background .3s ease, color .3s ease;
+  }
+  .display{font-family:'Bebas Neue',sans-serif; letter-spacing:0.02em;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  ::selection{background:var(--magenta); color:#fff;}
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--cyan); outline-offset:2px; border-radius:4px;}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+  }
+  .app{max-width:560px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; position:relative;}
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:18px 20px 10px;}
+  .wordmark{
+    font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:0.06em;
+    background:linear-gradient(90deg, var(--magenta), var(--cyan));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    display:flex; align-items:center; gap:8px; cursor:pointer; line-height:1;
+  }
+  .wordmark .dot{width:7px;height:7px;border-radius:50%;background:var(--magenta); box-shadow:0 0 10px var(--magenta); display:inline-block;}
+  .icon-btn{
+    width:38px;height:38px; border-radius:11px; border:1px solid var(--border);
+    background:var(--bg-elev); color:var(--text-dim); display:flex; align-items:center; justify-content:center;
+    font-size:16px; transition:all .15s ease;
+  }
+  .icon-btn:hover{color:var(--text); border-color:var(--cyan);}
+  main{flex:1; padding:0 20px 40px;}
+  .hero{padding:34px 0 18px;}
+  .hero h1{font-family:'Bebas Neue',sans-serif; font-size:56px; line-height:0.92; letter-spacing:0.01em;}
+  .hero .accent{color:var(--magenta);}
+  .hero p.tag{color:var(--text-dim); font-size:15px; margin-top:12px; max-width:38ch; line-height:1.5;}
+  .pulse-bars{display:flex; align-items:flex-end; gap:3px; height:22px; margin:18px 0 6px;}
+  .pulse-bars span{width:4px; border-radius:2px; background:linear-gradient(180deg, var(--cyan), var(--magenta)); animation:pulse 1.1s ease-in-out infinite;}
+  .pulse-bars span:nth-child(1){height:40%; animation-delay:0s;}
+  .pulse-bars span:nth-child(2){height:90%; animation-delay:.12s;}
+  .pulse-bars span:nth-child(3){height:60%; animation-delay:.24s;}
+  .pulse-bars span:nth-child(4){height:100%; animation-delay:.36s;}
+  .pulse-bars span:nth-child(5){height:50%; animation-delay:.48s;}
+  .pulse-bars span:nth-child(6){height:75%; animation-delay:.6s;}
+  .pulse-bars span:nth-child(7){height:35%; animation-delay:.72s;}
+  @keyframes pulse{0%,100%{transform:scaleY(0.45); opacity:.6;} 50%{transform:scaleY(1); opacity:1;}}
+  .role-cards{display:flex; flex-direction:column; gap:14px; margin-top:28px;}
+  .role-card{
+    background:var(--bg-elev); border:1px solid var(--border); border-radius:18px;
+    padding:22px; text-align:left; display:flex; align-items:center; gap:16px;
+    transition:transform .15s ease, border-color .15s ease; box-shadow:var(--shadow);
+  }
+  .role-card:hover{transform:translateY(-2px); border-color:var(--cyan);}
+  .role-card .glyph{
+    width:46px;height:46px;border-radius:13px; flex-shrink:0;
+    display:flex;align-items:center;justify-content:center; font-size:20px;
+    background:linear-gradient(135deg, color-mix(in srgb, var(--magenta) 30%, transparent), color-mix(in srgb, var(--cyan) 30%, transparent));
+    border:1px solid var(--border);
+  }
+  .role-card .rc-title{font-weight:700; font-size:16px;}
+  .role-card .rc-sub{color:var(--text-dim); font-size:13px; margin-top:2px;}
+  .role-card .chev{margin-left:auto; color:var(--text-faint); font-size:18px;}
+  .credit{color:var(--text-faint); font-size:11.5px; text-align:center; margin-top:30px; letter-spacing:0.02em;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;}
+  .field input, .field textarea, .field select{
+    width:100%; background:var(--bg-elev-2); border:1px solid var(--border); color:var(--text);
+    padding:12px 14px; border-radius:12px; font-size:15px; transition:border-color .15s ease;
+  }
+  .field input:focus, .field textarea:focus{border-color:var(--cyan);}
+  .field .hint{font-size:11.5px; color:var(--text-faint); margin-top:5px;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:13px 18px; border-radius:12px; border:none; font-weight:700; font-size:14.5px;
+    width:100%; transition:transform .12s ease, opacity .15s ease;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:linear-gradient(90deg, var(--magenta), var(--cyan)); color:#08080d;}
+  .btn-ghost{background:var(--bg-elev-2); color:var(--text); border:1px solid var(--border);}
+  .btn-danger{background:transparent; color:var(--danger); border:1px solid color-mix(in srgb, var(--danger) 40%, transparent);}
+  .btn-sm{width:auto; padding:8px 12px; font-size:12.5px; border-radius:9px;}
+  .btn:disabled{opacity:0.45; cursor:not-allowed;}
+  .back-row{display:flex; align-items:center; gap:10px; padding-top:6px; margin-bottom:6px;}
+  .back-row button{background:none;border:none;color:var(--text-dim); font-size:13px; display:flex; align-items:center; gap:5px;}
+  .back-row button:hover{color:var(--text);}
+  .card{background:var(--bg-elev); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; box-shadow:var(--shadow);}
+  .card h3{font-size:13px; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-dim); margin-bottom:12px; font-weight:700;}
+  .alert{padding:11px 14px; border-radius:11px; font-size:13px; margin-bottom:14px; border:1px solid;}
+  .alert-err{background:color-mix(in srgb, var(--danger) 12%, transparent); border-color:color-mix(in srgb, var(--danger) 35%, transparent); color:var(--danger);}
+  .alert-ok{background:color-mix(in srgb, var(--cyan) 10%, transparent); border-color:color-mix(in srgb, var(--cyan) 35%, transparent); color:var(--cyan);}
+  .alert-warn{background:color-mix(in srgb, var(--amber) 12%, transparent); border-color:color-mix(in srgb, var(--amber) 35%, transparent); color:var(--amber);}
+  .tabs{display:flex; gap:6px; background:var(--bg-elev); border:1px solid var(--border); border-radius:13px; padding:4px; margin-bottom:18px; overflow-x:auto;}
+  .tab{flex:1; text-align:center; padding:9px 8px; border-radius:9px; font-size:12.5px; font-weight:700; color:var(--text-dim); background:none; border:none; white-space:nowrap;}
+  .tab.active{background:linear-gradient(90deg, var(--magenta), var(--cyan)); color:#08080d;}
+  .venue-head{padding:22px 0 6px;}
+  .venue-head .vname{font-family:'Bebas Neue',sans-serif; font-size:40px; line-height:1;}
+  .venue-head .vmeta{color:var(--text-dim); font-size:13px; margin-top:4px;}
+  .live-pill{display:inline-flex; align-items:center; gap:6px; background:color-mix(in srgb, var(--magenta) 16%, transparent); color:var(--magenta); border:1px solid color-mix(in srgb, var(--magenta) 40%, transparent); font-size:11.5px; font-weight:800; letter-spacing:0.06em; padding:5px 10px; border-radius:20px; margin-top:10px;}
+  .live-pill .blip{width:6px;height:6px;border-radius:50%;background:var(--magenta); animation:blip 1.4s ease-in-out infinite;}
+  @keyframes blip{0%,100%{opacity:1;} 50%{opacity:.25;}}
+  .qrow{display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:14px; background:var(--bg-elev); border:1px solid var(--border); margin-bottom:10px;}
+  .qrow.playing{border-color:var(--magenta); background:linear-gradient(90deg, color-mix(in srgb, var(--magenta) 9%, transparent), var(--bg-elev));}
+  .qrow .rank{width:22px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-faint); flex-shrink:0;}
+  .qrow .vinyl{width:34px;height:34px;border-radius:50%; flex-shrink:0; background:repeating-radial-gradient(circle, #1a1a2a 0 2px, #2c2c40 2px 4px); border:1px solid var(--border); position:relative;}
+  .qrow.playing .vinyl{animation:spin 3s linear infinite;}
+  .qrow .vinyl::after{content:''; position:absolute; top:50%; left:50%; width:8px; height:8px; border-radius:50%; background:var(--magenta); transform:translate(-50%,-50%);}
+  @keyframes spin{from{transform:rotate(0)} to{transform:rotate(360deg)}}
+  .qrow .info{flex:1; min-width:0;}
+  .qrow .song{font-weight:700; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .qrow .artist{color:var(--text-dim); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .qrow .who{color:var(--text-faint); font-size:11px; margin-top:2px;}
+  .qrow .waveform{display:flex; align-items:flex-end; gap:2px; height:14px; margin-top:3px;}
+  .qrow .waveform span{width:2.5px; background:var(--cyan); border-radius:1px; animation:pulse 1s ease-in-out infinite;}
+  .vote-btn{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; background:var(--bg-elev-2); border:1px solid var(--border); border-radius:11px; padding:7px 11px; flex-shrink:0; min-width:48px; transition:all .12s ease;}
+  .vote-btn.voted{border-color:var(--amber); color:var(--amber);}
+  .vote-btn .n{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px;}
+  .vote-btn .arrow{font-size:11px;}
+  .row-actions{display:flex; gap:6px; flex-shrink:0;}
+  .empty{text-align:center; padding:40px 10px; color:var(--text-faint);}
+  .empty .big{font-size:34px; margin-bottom:8px;}
+  .stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:6px;}
+  .stat{background:var(--bg-elev); border:1px solid var(--border); border-radius:14px; padding:14px 10px; text-align:center;}
+  .stat .num{font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--cyan);}
+  .stat .lbl{font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px;}
+  .qr-box{background:#fff; padding:14px; border-radius:16px; display:flex; align-items:center; justify-content:center; width:180px; height:180px; margin:0 auto 14px;}
+  .qr-box img{width:100%; height:100%; object-fit:contain;}
+  .link-row{display:flex; gap:8px; align-items:center; background:var(--bg-elev-2); border:1px solid var(--border); border-radius:11px; padding:10px 12px;}
+  .link-row .u{flex:1; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .code-badge{font-family:'JetBrains Mono',monospace; letter-spacing:0.15em; font-size:22px; font-weight:700; color:var(--amber); text-align:center; padding:10px; background:var(--bg-elev-2); border:1px dashed var(--border); border-radius:12px; margin-bottom:14px;}
+  .social-row{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .social-row .plat{width:70px; font-size:12.5px; color:var(--text-dim); flex-shrink:0;}
+  .loading{display:flex; align-items:center; justify-content:center; padding:50px 0; color:var(--text-faint); font-size:13px; gap:10px;}
+  .spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--border); border-top-color:var(--cyan); animation:spin 0.7s linear infinite;}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:var(--bg-elev-2); border:1px solid var(--border); color:var(--text); padding:11px 18px; border-radius:12px; font-size:13px; box-shadow:var(--shadow); z-index:50; max-width:88%; text-align:center; animation:toastIn .35s cubic-bezier(.16,1,.3,1);}
+  @keyframes toastIn{0%{opacity:0; transform:translate(-50%,14px) scale(.95);} 100%{opacity:1; transform:translate(-50%,0) scale(1);}}
+  .toast.out{animation:toastOut .25s ease forwards;}
+  @keyframes toastOut{0%{opacity:1; transform:translate(-50%,0) scale(1);} 100%{opacity:0; transform:translate(-50%,10px) scale(.96);}}
+  .trial-bar-track{height:6px; border-radius:4px; background:var(--bg-elev-2); overflow:hidden; margin-top:6px;}
+  .trial-bar-fill{height:100%; background:linear-gradient(90deg, var(--cyan), var(--magenta));}
+  .conn-pill{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--text-faint); position:fixed; top:12px; right:16px;}
+  .conn-pill .d{width:6px;height:6px;border-radius:50%; background:var(--text-faint);}
+  .conn-pill.live .d{background:var(--cyan); box-shadow:0 0 6px var(--cyan);}
+
+  /* ===== 3D motion layer ===== */
+  #main{perspective:1400px;}
+  @keyframes viewEnter{
+    0%{opacity:0; transform:translateY(18px) translateZ(-60px) rotateX(6deg); filter:blur(2px);}
+    100%{opacity:1; transform:translateY(0) translateZ(0) rotateX(0); filter:blur(0);}
+  }
+  .view-enter{animation:viewEnter .55s cubic-bezier(.16,1,.3,1) both; transform-style:preserve-3d;}
+  .role-cards{perspective:900px;}
+  .role-card{transform-style:preserve-3d; will-change:transform; transition:transform .12s ease, border-color .15s ease, box-shadow .2s ease;}
+  .role-card:hover{box-shadow:0 24px 50px -18px color-mix(in srgb, var(--cyan) 35%, transparent);}
+  .role-card .glyph{transition:transform .2s ease; transform:translateZ(14px);}
+  .role-card:hover .glyph{transform:translateZ(26px) scale(1.06);}
+  .card, .stat, .qrow{transform-style:preserve-3d;}
+  @keyframes rowIn{
+    0%{opacity:0; transform:translateX(-10px) translateZ(-30px) scale(.97);}
+    100%{opacity:1; transform:translateX(0) translateZ(0) scale(1);}
+  }
+  .qrow{transition:transform .18s ease, box-shadow .18s ease;}
+  .qrow-new{animation:rowArrive .55s cubic-bezier(.16,1,.3,1) both;}
+  @keyframes rowArrive{
+    0%{opacity:0; transform:translateX(-14px) translateZ(-30px) scale(.96);
+       box-shadow:0 0 0 0 color-mix(in srgb, var(--cyan) 55%, transparent);}
+    55%{opacity:1; transform:translateX(0) translateZ(4px) scale(1.01);
+        box-shadow:0 0 0 6px color-mix(in srgb, var(--cyan) 0%, transparent);}
+    100%{opacity:1; transform:translateX(0) translateZ(0) scale(1);}
+  }
+  .btn-primary.success{animation:btnSuccessPop .5s cubic-bezier(.16,1,.3,1); background:linear-gradient(90deg, var(--cyan), var(--magenta));}
+  @keyframes btnSuccessPop{0%{transform:scale(1);} 35%{transform:scale(1.045);} 100%{transform:scale(1);}}
+  .tab{transition:background .25s ease, color .2s ease, transform .15s ease;}
+  .tab.active{transform:scale(1.02);}
+  .tab:active{transform:scale(.95);}
+  /* Silent request alert: two soft edge-glow pulses (~2/sec max, no strobing). */
+  .alert-flash{position:fixed; inset:0; pointer-events:none; z-index:60; border-radius:0;
+    box-shadow:inset 0 0 0 3px var(--magenta), inset 0 0 70px 10px color-mix(in srgb, var(--magenta) 55%, transparent), inset 0 0 130px 30px color-mix(in srgb, var(--cyan) 30%, transparent);
+    animation:alertFlash 1s ease-out both;}
+  @keyframes alertFlash{0%{opacity:0;} 15%{opacity:1;} 40%{opacity:.2;} 60%{opacity:.9;} 100%{opacity:0;}}
+  @media (prefers-reduced-motion: reduce){ .alert-flash{display:none;} }
+  #djTabBody{perspective:1000px;}
+  @keyframes tabEnter{
+    0%{opacity:0; transform:translateX(calc(var(--tab-dir,1)*22px)) translateZ(-40px) rotateY(calc(var(--tab-dir,1)*-4deg));}
+    100%{opacity:1; transform:translateX(0) translateZ(0) rotateY(0);}
+  }
+  .tab-enter{animation:tabEnter .38s cubic-bezier(.16,1,.3,1) both;}
+  @media (prefers-reduced-motion: reduce){
+    .qrow-new, .btn-primary.success, .tab-enter, .toast{animation:none !important;}
+  }
+  .qrow.playing{
+    box-shadow:0 10px 34px -14px color-mix(in srgb, var(--magenta) 55%, transparent);
+    transform:translateZ(6px);
+  }
+  .qrow .vinyl{
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255,255,255,0.18), transparent 40%),
+      repeating-radial-gradient(circle, #1a1a2a 0 2px, #2c2c40 2px 4px);
+    box-shadow:0 3px 10px -3px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .qrow.playing .vinyl{animation:spin 3s linear infinite, vinylPop .4s cubic-bezier(.16,1,.3,1);}
+  @keyframes vinylPop{0%{transform:scale(.6);} 100%{transform:scale(1);}}
+  .live-pill{animation:livePulse 2s ease-in-out infinite;}
+  @keyframes livePulse{
+    0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--magenta) 45%, transparent);}
+    50%{box-shadow:0 0 0 6px color-mix(in srgb, var(--magenta) 0%, transparent);}
+  }
+  .btn-primary{background-size:160% 100%; background-position:0% 0; transition:background-position .35s ease, transform .12s ease;}
+  .btn-primary:hover{background-position:100% 0;}
+  .wordmark{transition:filter .2s ease;}
+  .wordmark:hover{filter:drop-shadow(0 0 10px color-mix(in srgb, var(--cyan) 55%, transparent));}
+  @media (prefers-reduced-motion: reduce){
+    .view-enter, .qrow, .qrow.playing .vinyl, .live-pill{animation:none !important;}
+  }
+
+  /* ===== v2.5.5 — Edge quick panels (mobile only) =====
+     A faint pulsing grip hugs the screen edge; tapping/swiping it slides out
+     a small popup. The popup deliberately uses the OPPOSITE of the app theme
+     (light card on dark, dark card on light) so it always stands out, and it
+     flips instantly when the theme toggle is used. Pure CSS — no JS needed
+     to follow the theme. */
+  .edge-ui{display:none;}
+  @media (pointer:coarse) and (max-width:820px){ .edge-ui{display:block;} }
+
+  :root[data-theme="dark"] .edge-ui{
+    --ep-bg:#f7f5fb; --ep-bg2:#ebe8f3; --ep-text:#16141f; --ep-dim:#5a5568;
+    --ep-border:rgba(20,10,40,0.12); --ep-shadow:0 24px 60px -18px rgba(0,0,0,0.75);
+  }
+  :root[data-theme="light"] .edge-ui{
+    --ep-bg:#121220; --ep-bg2:#1d1e31; --ep-text:#f5f3f8; --ep-dim:#a29eb3;
+    --ep-border:rgba(255,255,255,0.12); --ep-shadow:0 24px 60px -18px rgba(30,10,50,0.45);
+  }
+
+  .edge-grip{
+    position:fixed; top:50%; width:20px; height:78px; margin-top:-39px; z-index:45;
+    border:none; padding:0; display:flex; align-items:center; justify-content:center;
+    background:var(--ep-bg); opacity:.42; touch-action:none; -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
+    animation:edgePulse 2.8s ease-in-out infinite;
+    transition:background .3s ease, opacity .25s ease;
+  }
+  .edge-grip.right{right:0; border-radius:14px 0 0 14px;}
+  .edge-grip.left{left:0; border-radius:0 14px 14px 0;}
+  .edge-grip i{display:block; width:3px; height:30px; border-radius:2px; background:linear-gradient(180deg, var(--magenta), var(--cyan));}
+  .edge-grip.open{animation:none; opacity:.95;}
+  .edge-grip.moving{animation:none; opacity:1; width:26px; box-shadow:0 0 18px 3px color-mix(in srgb, var(--cyan) 55%, transparent); transition:none;}
+  @keyframes edgePulse{
+    0%,100%{opacity:.34; box-shadow:0 0 0 0 color-mix(in srgb, var(--magenta) 0%, transparent);}
+    50%{opacity:.78; box-shadow:0 0 14px 2px color-mix(in srgb, var(--magenta) 45%, transparent);}
+  }
+
+  .edge-pop{
+    position:fixed; top:0; z-index:46; width:min(290px, 78vw); max-height:72vh; overflow-y:auto;
+    background:var(--ep-bg); color:var(--ep-text); border:1px solid var(--ep-border);
+    border-radius:18px; padding:16px; box-shadow:var(--ep-shadow);
+    visibility:hidden; opacity:0; pointer-events:none;
+    transition:transform .32s cubic-bezier(.16,1,.3,1), opacity .2s ease, visibility 0s linear .32s, background .3s ease, color .3s ease;
+  }
+  .edge-pop.right{right:30px; left:auto; transform:translate(115%,0);}
+  .edge-pop.left{left:30px; right:auto; transform:translate(-115%,0);}
+  .edge-pop.open{visibility:visible; opacity:1; pointer-events:auto; transform:translate(0,0); transition-delay:0s;}
+  .edge-pop .ep-foot{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid var(--ep-border); color:var(--ep-dim); font-size:11px;}
+  .edge-pop .ep-reset{background:none; border:1px solid var(--ep-border); color:var(--ep-text); border-radius:8px; padding:5px 9px; font-size:11px; flex-shrink:0;}
+  .edge-pop .ep-head{text-align:center; padding-bottom:12px;}
+  .edge-pop .ep-av{width:72px; height:72px; border-radius:50%; object-fit:cover; border:2px solid var(--ep-border); background:var(--ep-bg2); display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto;}
+  .edge-pop .ep-name{font-family:'Bebas Neue',sans-serif; font-size:26px; line-height:1.05; margin-top:8px; letter-spacing:0.02em;}
+  .edge-pop .ep-bio{color:var(--ep-dim); font-size:12.5px; line-height:1.45; margin-top:6px;}
+  .edge-pop .ep-title{font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:0.06em; background:linear-gradient(90deg, var(--magenta), var(--cyan)); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:2px;}
+  .edge-pop .ep-sub{color:var(--ep-dim); font-size:11.5px; margin-bottom:10px;}
+  .edge-pop .ep-list{display:flex; flex-direction:column; gap:7px;}
+  .edge-pop .ep-item{display:flex; align-items:center; gap:10px; width:100%; padding:11px 12px; border-radius:12px; background:var(--ep-bg2); border:1px solid var(--ep-border); color:var(--ep-text); text-align:left; text-decoration:none; font-size:13px; transition:transform .12s ease, background .3s ease;}
+  .edge-pop .ep-item:active{transform:scale(.98);}
+  .edge-pop .ep-item .g{font-size:18px; flex-shrink:0;}
+  .edge-pop .ep-item b{display:block; font-size:13.5px;}
+  .edge-pop .ep-item small{display:block; color:var(--ep-dim); font-size:11.5px; margin-top:1px;}
+  .edge-pop .ep-item .r{margin-left:auto; color:var(--ep-dim); font-size:12px; max-width:50%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .edge-pop .ep-cta{display:block; width:100%; margin-top:10px; padding:11px 14px; border:none; border-radius:12px; font-weight:700; font-size:13.5px; background:linear-gradient(90deg, var(--magenta), var(--cyan)); color:#08080d;}
+  .edge-pop .ep-load{display:flex; align-items:center; justify-content:center; gap:8px; color:var(--ep-dim); font-size:12px; padding:10px 0;}
+  @media (prefers-reduced-motion: reduce){
+    .edge-grip{animation:none !important; opacity:.6;}
+    .edge-pop{transition-duration:0.01ms !important;}
+  }
+
+  /* ===== v2.5.6 =====
+     • Page-title headers use Londrina Shadow (Bebas Neue stays as the fallback if the font
+       can't load, e.g. offline). Colours are untouched — the .accent span keeps its magenta.
+     • Forgot-password link, Back/Log out buttons, collapsible profile sections, social editor. */
+  .hero h1{font-family:'Londrina Shadow','Bebas Neue',sans-serif; font-weight:400; letter-spacing:0.02em; line-height:1.04;}
+  .hero h1{font-size:clamp(40px, 13vw, 56px);}   /* h1s with their own inline size keep it */
+
+  .btn-link{
+    display:block; width:100%; min-height:46px; padding:12px 14px;
+    background:color-mix(in srgb, var(--cyan) 8%, transparent);
+    border:1px solid color-mix(in srgb, var(--cyan) 35%, transparent); border-radius:12px; text-align:center;
+    color:var(--cyan); font-size:14px; font-weight:600; letter-spacing:0.01em;
+    transition:background .15s ease, border-color .15s ease, transform .12s ease;
+  }
+  .btn-link:active{transform:scale(0.98); background:color-mix(in srgb, var(--cyan) 16%, transparent);}
+  @media (hover:hover){
+    .btn-link:hover{background:color-mix(in srgb, var(--cyan) 15%, transparent); border-color:var(--cyan);}
+  }
+
+  .back-row button{
+    font-size:15px; font-weight:600; gap:6px; min-height:44px;
+    padding:10px 14px 10px 8px; margin-left:-8px; border-radius:11px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .back-row button:active{background:var(--bg-elev);}
+
+  .pf-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
+  .pf-head h3{margin:0 !important;}
+  .pf-toggle{
+    flex-shrink:0; min-height:34px; padding:7px 13px; border-radius:9px;
+    background:var(--bg-elev-2); border:1px solid var(--border); color:var(--text);
+    font-size:12px; font-weight:700; transition:border-color .15s ease;
+  }
+  .pf-toggle:hover{border-color:var(--cyan);}
+  .pf-sum{display:none; text-align:left; color:var(--text-dim); font-size:13px; line-height:1.5;}
+  .pf-sec.pf-collapsed .pf-head{margin-bottom:8px;}
+  .pf-sec.pf-collapsed > .pf-sum{display:block;}
+  .pf-sec.pf-collapsed > :not(.pf-head):not(.pf-sum){display:none !important;}
+  .pf-sum .pf-av{width:34px; height:34px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px; border:1px solid var(--border);}
+  .pf-chip{display:inline-flex; align-items:center; gap:5px; padding:4px 10px; margin:2px 5px 2px 0; border-radius:99px; background:var(--bg-elev-2); border:1px solid var(--border); color:var(--text); font-size:12px;}
+  #saveProfile.pf-hide{display:none !important;}
+
+  .social-row{min-width:0;}
+  .social-row .plat-name{width:84px; flex-shrink:0; background:var(--bg-elev-2); border:1px solid var(--border); color:var(--text); padding:9px 10px; border-radius:10px; font-size:12.5px;}
+  .social-row .pf-x{flex-shrink:0; width:34px; height:34px; border-radius:9px; background:var(--bg-elev-2); border:1px solid var(--border); color:var(--text-dim); font-size:13px;}
+  .social-row .pf-x:hover{color:var(--danger); border-color:var(--danger);}
+  .pf-add{display:flex; gap:8px; align-items:center; margin-top:4px; padding-top:14px; border-top:1px dashed var(--border);}
+  .pf-add select{flex:1; min-width:0; background:var(--bg-elev-2); border:1px solid var(--border); color:var(--text); padding:10px 11px; border-radius:10px; font-size:13.5px;}
+
+  /* ===== v2.5.7 — Splash screen =====
+     Full-screen intro video (assets/splash.mp4). Always dark so the video blends in.
+     Skips on tap, on video end, on error, or after a safety timeout. */
+  #splash{
+    position:fixed; inset:0; z-index:200; background:#08080d;
+    display:flex; align-items:center; justify-content:center;
+    opacity:1; transition:opacity .45s ease;
+  }
+  #splash.hide{opacity:0; pointer-events:none;}
+  #splash video{width:100%; height:100%; object-fit:cover; display:block;}
+  #splash .skip{
+    position:absolute; right:16px; bottom:max(18px, env(safe-area-inset-bottom));
+    background:rgba(255,255,255,0.12); color:#f5f3f8; border:1px solid rgba(255,255,255,0.2);
+    border-radius:20px; padding:8px 16px; font-size:12px; font-weight:700; letter-spacing:0.04em;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  }
+</style>
+</head>
+<body>
+<!-- Splash: plays once per browser session -->
+<div id="splash" aria-hidden="true">
+  <video id="splashVideo" muted playsinline autoplay preload="auto" poster="icons/icon-512.png">
+    <source src="assets/splash.mp4" type="video/mp4">
+  </video>
+  <button type="button" class="skip" id="splashSkip">Skip</button>
+</div>
+
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="wordmark" id="logoHome"><span class="dot"></span>TRACTAP</div>
+    <button class="icon-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle dark and light mode">◐</button>
+  </div>
+  <main id="main"><div class="loading"><div class="spinner"></div>Loading…</div></main>
+</div>
+<div id="toastHost"></div>
+
+<script>
+/* Splash controller — kept outside the main app closure so it can never block the app from booting. */
+(function(){
+  var el = document.getElementById('splash');
+  if(!el) return;
+  var done = false;
+  function finish(){
+    if(done) return; done = true;
+    try{ sessionStorage.setItem('tractap_splash_seen','1'); }catch(e){}
+    el.classList.add('hide');
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 500);
+  }
+  var seen = false;
+  try{ seen = sessionStorage.getItem('tractap_splash_seen') === '1'; }catch(e){}
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(seen || reduce){ if(el.parentNode) el.parentNode.removeChild(el); return; }
+
+  var v = document.getElementById('splashVideo');
+  document.getElementById('splashSkip').addEventListener('click', finish);
+  el.addEventListener('click', finish);
+  if(v){
+    v.addEventListener('ended', finish);
+    v.addEventListener('error', finish);
+    var src = v.querySelector('source');
+    if(src) src.addEventListener('error', finish);
+    var p = v.play && v.play();
+    if(p && p.catch) p.catch(finish);   // autoplay blocked → go straight to the app
+  }
+  setTimeout(finish, 8000);             // safety net: never trap the user on the splash
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+
+const API = (window.TRACTAP_API_BASE || "http://localhost:4000").replace(/\/$/, "");
+
+/* ================= STATE ================= */
+const State = {
+  view: "landing",
+  venueCode: null,
+  venue: null,
+  queue: [],
+  dj: null,
+  token: localStorage.getItem('tractap_token') || null,
+  djTab: "queue",
+  deviceId: null,
+  socket: null,
+};
+
+const $main = document.getElementById("main");
+const $toastHost = document.getElementById("toastHost");
+
+function toast(msg, ms=2600){
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = msg;
+  $toastHost.appendChild(el);
+  setTimeout(()=>{
+    el.classList.add('out');
+    setTimeout(()=>el.remove(), 260);
+  }, ms);
+}
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ================= DEVICE ID ================= */
+function getDevice(){
+  if(State.deviceId) return State.deviceId;
+  let id = localStorage.getItem('tractap_device');
+  if(!id){
+    id = 'dev_' + Date.now().toString(36) + Math.random().toString(36).slice(2,10);
+    localStorage.setItem('tractap_device', id);
+  }
+  State.deviceId = id;
+  return id;
+}
+
+/* ================= API HELPER ================= */
+async function api(path, { method='GET', body, auth=false } = {}){
+  const headers = {};
+  if(body !== undefined || method !== 'GET') headers['Content-Type'] = 'application/json';
+  if(auth && State.token) headers['Authorization'] = 'Bearer ' + State.token;
+
+  // Some shared hosts block or mangle PATCH/DELETE before they ever reach
+  // PHP (common with default ModSecurity/LiteSpeed configs). Send these
+  // as a plain POST instead, carrying the real method as a header AND a
+  // body field — the backend honors either, whichever survives the trip.
+  // A handful of extra bytes on every write call is a fair trade for not
+  // silently failing on hosts that restrict HTTP verbs.
+  let effectiveMethod = method;
+  let effectiveBody = body;
+  if(method === 'PATCH' || method === 'DELETE' || method === 'PUT'){
+    headers['X-HTTP-Method-Override'] = method;
+    effectiveMethod = 'POST';
+    effectiveBody = { ...(body||{}), _method: method };
+  }
+
+  let res, data;
+  try{
+    // Live data must never come from a cache (browser, LiteSpeed, CDN):
+    // GETs carry a throwaway timestamp param and cache:'no-store'.
+    let url = API + path;
+    if(effectiveMethod === 'GET') url += (path.includes('?') ? '&' : '?') + '_=' + Date.now();
+    res = await fetch(url, {
+      method: effectiveMethod, headers, cache: 'no-store',
+      body: effectiveBody ? JSON.stringify(effectiveBody) : undefined,
+    });
+  }catch(e){
+    throw { status: 0, error: "Can't reach the server. Check your connection or try again." };
+  }
+  const isJson = (res.headers.get('content-type')||'').includes('application/json');
+  data = isJson ? await res.json().catch(()=>({})) : null;
+  if(!res.ok){
+    throw { status: res.status, error: (data && data.error) || `Request failed (${res.status})` };
+  }
+  return data;
+}
+async function apiBlob(path, { auth=true } = {}){
+  const headers = {};
+  if(auth && State.token) headers['Authorization'] = 'Bearer ' + State.token;
+  const res = await fetch(API + path, { headers });
+  if(!res.ok) throw { status: res.status, error: 'Export failed.' };
+  return res.blob();
+}
+async function apiUpload(path, file, fieldName){
+  const headers = {};
+  if(State.token) headers['Authorization'] = 'Bearer ' + State.token;
+  const formData = new FormData();
+  formData.append(fieldName, file);
+  let res, data;
+  try{
+    res = await fetch(API + path, { method:'POST', headers, body: formData });
+  }catch(e){
+    throw { status: 0, error: "Can't reach the server. Check your connection or try again." };
+  }
+  const isJson = (res.headers.get('content-type')||'').includes('application/json');
+  data = isJson ? await res.json().catch(()=>({})) : null;
+  if(!res.ok){
+    throw { status: res.status, error: (data && data.error) || `Upload failed (${res.status})` };
+  }
+  return data;
+}
+
+/* ================= THEME ================= */
+document.getElementById('themeToggle').addEventListener('click', ()=>{
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('tractap_theme', next);
+});
+(function loadTheme(){
+  const t = localStorage.getItem('tractap_theme');
+  if(t) document.documentElement.setAttribute('data-theme', t);
+})();
+
+document.getElementById('logoHome').addEventListener('click', ()=>{
+  stopPolling();
+  State.view = 'landing';
+  render();
+});
+
+/* ================= LIVE UPDATES (polling) =================
+   Shared PHP hosting can't run a persistent Socket.io process, so the
+   queue refreshes on a short interval instead of instant push. Feels
+   live in practice at 3.5s. */
+let pollTimer = null;
+// After a DJ or guest action (vote, request, mark playing/played, delete)
+// does its own fresh fetch+render, a background poll tick landing a moment
+// later — with data fetched just BEFORE that action took effect — can
+// clobber the screen with stale state, making the action look like it
+// silently failed or reverted. Suppressing polling for a short window
+// after any manual mutation gives that mutation's own render the final
+// word; the next scheduled tick a few seconds later is unaffected.
+let suppressPollUntil = 0;
+function suppressPollingBriefly(ms=1200){
+  suppressPollUntil = Date.now() + ms;
+}
+function startPolling(fn, ms=3500){
+  stopPolling();
+  pollTimer = setInterval(fn, ms);
+}
+function stopPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
+  const pill = document.getElementById('connPill');
+  if(pill) pill.remove();
+}
+function beginGuestPolling(){
+  startPolling(async ()=>{
+    if(State.view!=='guest' || !State.venueCode) return;
+    if(Date.now() < suppressPollUntil) return;
+    try{
+      const data = await api(`/api/venues/${State.venueCode}/requests`);
+      State.queue = data.requests;
+      renderGuestQueueList();
+    }catch(e){ /* ignore transient errors, try again next tick */ }
+  });
+}
+/* ================= DJ REQUEST ALERTS =================
+   Deliberately SILENT — no Audio API is used anywhere, because the DJ may
+   be playing music from the same phone that runs this app. Alerts are:
+   screen flash + vibration (where supported) + a toast, plus a silent
+   system notification when the app is in the background. */
+let djKnownIds = null;      // request IDs already seen for the current venue
+let djKnownVenue = null;
+let unseenCount = 0;
+const BASE_TITLE = document.title;
+
+function alertsEnabled(){ return localStorage.getItem('tractap_alerts') !== 'off'; }
+
+function flashScreen(){
+  const el = document.createElement('div');
+  el.className = 'alert-flash';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1100);
+}
+
+function showSilentNotification(body){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  if(!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg => reg.showNotification('New song request', {
+    body,
+    tag: 'tractap-requests',   // collapses a burst into one notification
+    renotify: true,
+    silent: true,              // never plays a sound
+    icon: 'icons/icon-192.png',
+  })).catch(()=>{});
+}
+
+function notifyDj(fresh){
+  const label = fresh.length === 1
+    ? fresh[0].song + (fresh[0].artist ? ' — ' + fresh[0].artist : '')
+    : fresh.length + ' new requests';
+  flashScreen();
+  if(navigator.vibrate) navigator.vibrate([120, 70, 120]);
+  toast('🔔 ' + label);
+  if(document.hidden){
+    unseenCount += fresh.length;
+    document.title = `(${unseenCount}) ${BASE_TITLE}`;
+    showSilentNotification(label);
+  }
+}
+
+// Call after State.queue is refreshed on a DJ screen. The first call for a
+// venue only records a baseline, so opening the dashboard never alerts for
+// requests that were already sitting in the queue.
+function detectNewRequests(){
+  if(djKnownVenue !== State.venueCode){ djKnownVenue = State.venueCode; djKnownIds = null; }
+  const fresh = djKnownIds
+    ? State.queue.filter(r => r.status === 'pending' && !djKnownIds.has(r.id))
+    : [];
+  djKnownIds = new Set(State.queue.map(r => r.id));
+  if(fresh.length && alertsEnabled()) notifyDj(fresh);
+}
+
+// Small "Live / Reconnecting…" indicator so a stalled connection is visible
+// to the DJ instead of the queue silently going stale.
+function setConn(ok){
+  let el = document.getElementById('connPill');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'connPill';
+    el.style.cssText = 'top:auto;bottom:10px;left:12px;right:auto;z-index:40;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.className = 'conn-pill' + (ok ? ' live' : '');
+  el.innerHTML = '<span class="d"></span>' + (ok ? 'Live' : 'Reconnecting…');
+}
+
+let djPollInFlight = false;
+let djLastOk = 0;
+let djFailCount = 0;
+
+// One poll of the DJ queue. Runs on EVERY DJ dashboard tab (not just Queue) so
+// alerts still fire from the Venue/Profile tabs; only repaints on the Queue tab.
+async function djPollOnce(){
+  if(State.view!=='djDash' || !State.venueCode) return;
+  if(djPollInFlight) return;                       // never stack slow requests
+  if(Date.now() < suppressPollUntil) return;
+  djPollInFlight = true;
+  const code = State.venueCode;
+  try{
+    const data = await api(`/api/venues/${code}/requests`);
+    // Discard if the DJ navigated away, or made a change while this was in flight.
+    if(code !== State.venueCode || State.view!=='djDash') return;
+    if(Date.now() < suppressPollUntil) return;
+    State.queue = data.requests;
+    djLastOk = Date.now(); djFailCount = 0; setConn(true);
+    // Alerts must never be able to block the queue from updating.
+    try{ detectNewRequests(); }catch(e){ console.warn('alert error', e); }
+    if(State.djTab==='queue') renderDjQueueTab(document.getElementById('djTabBody'));
+  }catch(e){
+    djFailCount++;
+    if(djFailCount >= 2) setConn(false);
+  }finally{
+    djPollInFlight = false;
+  }
+}
+
+function beginDjQueuePolling(){
+  djLastOk = Date.now();
+  startPolling(djPollOnce);
+  djPollOnce();   // fetch right away instead of waiting a full interval
+}
+
+// Restarts the right polling loop after navigating back into a view that
+// depends on it (e.g. returning from the DJ profile page to a live queue).
+function resumePollingForView(view){
+  if(view === 'guest' && State.venueCode) beginGuestPolling();
+  else if(view === 'djDash' && State.djTab === 'queue' && State.venueCode) beginDjQueuePolling();
+}
+
+function shareLink(code){ return `${(window.TRACTAP_APP_URL||location.origin+location.pathname)}?venue=${code}`; }
+function djProfileLink(username){ return `${(window.TRACTAP_APP_URL||location.origin+location.pathname)}?dj=${encodeURIComponent(username)}`; }
+function qrUrl(link){
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=' + encodeURIComponent(link);
+}
+
+function sortForDisplay(list){
+  const playing = list.filter(r=>r.status==='playing');
+  const pending = list.filter(r=>r.status==='pending');
+  const played = list.filter(r=>r.status==='played');
+  return {playing, pending, played};
+}
+
+/* ================= ROUTER ================= */
+function render(){
+  if(State.view === 'landing') renderLanding();
+  else if(State.view === 'guestJoin') renderGuestJoin();
+  else if(State.view === 'guest') renderGuest();
+  else if(State.view === 'djAuth') renderDjAuth();
+  else if(State.view === 'djDash') renderDjDash();
+  else if(State.view === 'resetPassword') renderResetPassword();
+  else if(State.view === 'djProfile') renderDjPublicProfile();
+  playViewEnter();
+  wireCardTilt();
+  syncEdgeUi(); // v2.5.5 — mount/unmount the mobile edge panel for this view
+}
+
+// Smooth 3D entrance for whatever just got painted into #main.
+function playViewEnter(){
+  $main.classList.remove('view-enter');
+  void $main.offsetWidth; // restart animation
+  $main.classList.add('view-enter');
+}
+
+// Subtle pointer-driven 3D tilt on role/glyph cards — desktop mouse only,
+// no-op (and harmless) on touch, and skipped entirely for reduced-motion.
+function wireCardTilt(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll('.role-card').forEach(card=>{
+    if(card._tiltWired) return;
+    card._tiltWired = true;
+    card.addEventListener('mousemove', e=>{
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left)/r.width - 0.5;
+      const py = (e.clientY - r.top)/r.height - 0.5;
+      card.style.transform = `translateY(-2px) rotateX(${(-py*6).toFixed(2)}deg) rotateY(${(px*8).toFixed(2)}deg)`;
+    });
+    card.addEventListener('mouseleave', ()=>{ card.style.transform = ''; });
+  });
+}
+
+/* ================= PUBLIC DJ PROFILE ================= */
+let djProfileErr = "";
+let djProfileData = null;
+let djProfileReturnView = 'landing'; // where "back" goes
+function socialIcon(platform){
+  const p = (platform||'').toLowerCase();
+  if(p==='instagram') return '📷';
+  if(p==='tiktok') return '🎵';
+  if(p==='soundcloud') return '☁️';
+  if(p==='youtube') return '▶️';
+  if(p==='twitter') return '🐦';
+  if(p==='facebook') return '👤';
+  if(p==='website') return '🔗';
+  if(p==='x') return '✖️';
+  if(p==='mixcloud') return '🎛️';
+  if(p==='twitch') return '🎮';
+  if(p==='whatsapp') return '💬';
+  if(p==='linktree') return '🌳';
+  if(p==='snapchat') return '👻';
+  return '🔗';
+}
+function normalizeLink(handle){
+  if(!handle) return null;
+  return /^https?:\/\//i.test(handle) ? handle : null;
+}
+async function openDjProfile(username, returnView){
+  djProfileReturnView = returnView || State.view || 'landing';
+  djProfileErr = "";
+  djProfileData = null;
+  State.view = 'djProfile';
+  render();
+  try{
+    const data = await api(`/api/dj/${encodeURIComponent(username)}`);
+    djProfileData = data.dj;
+  }catch(e){
+    djProfileErr = e.error || 'Could not load this profile.';
+  }
+  if(State.view === 'djProfile') renderDjPublicProfile();
+}
+function renderDjPublicProfile(){
+  if(!djProfileData){
+    $main.innerHTML = `
+      <div class="back-row"><button id="back">‹ Back</button></div>
+      ${djProfileErr
+        ? `<div class="alert alert-err" style="margin-top:16px;">${escapeHtml(djProfileErr)}</div>`
+        : `<div class="loading"><div class="spinner"></div>Loading profile…</div>`}
+    `;
+    document.getElementById('back').onclick = ()=>{ State.view = djProfileReturnView; render(); resumePollingForView(djProfileReturnView); };
+    return;
+  }
+  const dj = djProfileData;
+  const links = (dj.socialLinks||[]).filter(l=>l.handle);
+  $main.innerHTML = `
+    <div class="back-row"><button id="back">‹ Back</button></div>
+    <div style="text-align:center; padding:20px 0 8px;">
+      ${dj.avatarUrl
+        ? `<img src="${escapeHtml(dj.avatarUrl)}" alt="${escapeHtml(dj.displayName)}" style="width:104px;height:104px;border-radius:50%;object-fit:cover;border:3px solid var(--border);">`
+        : `<div style="width:104px;height:104px;border-radius:50%;background:var(--bg-elev-2);border:3px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto;">🎧</div>`}
+      <div class="display" style="font-size:32px; margin-top:14px;">${escapeHtml(dj.displayName)}</div>
+      ${dj.bio ? `<p class="tag" style="max-width:34ch;margin:8px auto 0;">${escapeHtml(dj.bio)}</p>` : ''}
+    </div>
+
+    ${dj.liveVenue ? `
+    <div class="card" style="text-align:center; border-color:var(--magenta);">
+      <span class="live-pill" style="margin-bottom:10px;"><span class="blip"></span>LIVE NOW &middot; ${escapeHtml(dj.liveVenue.name)}</span>
+      <button class="btn btn-primary" id="joinLiveBtn" style="margin-top:10px;">Join the queue</button>
+    </div>` : `
+    <div class="card" style="text-align:center;">
+      <p class="hint">Not playing a set right now — check back when you see their code posted.</p>
+    </div>`}
+
+    ${(links.length || dj.spotifyLink || dj.appleLink) ? `
+    <div class="card">
+      <h3>Find them elsewhere</h3>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${links.map(l=>{
+          const href = normalizeLink(l.handle);
+          const label = href ? l.handle.replace(/^https?:\/\//i,'') : l.handle;
+          return `<a href="${href||'#'}" target="${href?'_blank':''}" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-elev-2);border:1px solid var(--border);border-radius:11px;text-decoration:none;color:var(--text);font-size:13.5px;">
+            <span>${socialIcon(l.platform)}</span><span style="font-weight:600;">${escapeHtml(l.platform)}</span><span style="color:var(--text-dim);margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;">${escapeHtml(label)}</span>
+          </a>`;
+        }).join('')}
+        ${dj.spotifyLink ? `<a href="${escapeHtml(dj.spotifyLink)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-elev-2);border:1px solid var(--border);border-radius:11px;text-decoration:none;color:var(--text);font-size:13.5px;"><span>🎧</span><span style="font-weight:600;">Spotify playlist</span></a>` : ''}
+        ${dj.appleLink ? `<a href="${escapeHtml(dj.appleLink)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-elev-2);border:1px solid var(--border);border-radius:11px;text-decoration:none;color:var(--text);font-size:13.5px;"><span>🍎</span><span style="font-weight:600;">Apple Music playlist</span></a>` : ''}
+      </div>
+    </div>` : ''}
+  `;
+  document.getElementById('back').onclick = ()=>{ State.view = djProfileReturnView; render(); resumePollingForView(djProfileReturnView); };
+  const joinBtn = document.getElementById('joinLiveBtn');
+  if(joinBtn) joinBtn.onclick = ()=>{
+    stopPolling();
+    State.view = 'guestJoin';
+    render();
+    const codeInput = document.getElementById('codeInput');
+    if(codeInput){ codeInput.value = dj.liveVenue.code; document.getElementById('joinBtn').click(); }
+  };
+}
+
+/* ================= RESET PASSWORD (from emailed link) ================= */
+let resetErr = "";
+function renderResetPassword(){
+  $main.innerHTML = `
+    <div class="hero" style="padding-top:20px;">
+      <h1 style="font-size:34px;">SET NEW <span class="accent">PASSWORD</span></h1>
+      <p class="tag">Choose a new password for your DJ account.</p>
+    </div>
+    <div id="resetAlerts">${resetErr}</div>
+    <div class="field"><label>New password</label><input id="newPass" type="password" placeholder="••••••••" maxlength="60"></div>
+    <div class="field"><label>Confirm password</label><input id="newPass2" type="password" placeholder="••••••••" maxlength="60"></div>
+    <button class="btn btn-primary" id="resetSubmit">Set password &amp; log in</button>
+  `;
+  document.getElementById('resetSubmit').onclick = doResetPassword;
+}
+
+async function doResetPassword(){
+  const p1 = document.getElementById('newPass').value;
+  const p2 = document.getElementById('newPass2').value;
+  const alerts = document.getElementById('resetAlerts');
+  if(!p1 || p1.length < 4){ alerts.innerHTML = `<div class="alert alert-err">Password must be at least 4 characters.</div>`; return; }
+  if(p1 !== p2){ alerts.innerHTML = `<div class="alert alert-err">Passwords don't match.</div>`; return; }
+
+  const btn = document.getElementById('resetSubmit'); btn.disabled=true; btn.textContent='Saving…';
+  try{
+    const params = new URLSearchParams(location.search);
+    const token = params.get('reset');
+    const data = await api('/api/auth/reset-password', { method:'POST', body:{ token, newPassword: p1 } });
+    State.token = data.token; localStorage.setItem('tractap_token', data.token);
+    State.dj = data.dj;
+    toast('Password updated');
+    history.replaceState(null, '', location.pathname);
+    await loadDjLiveVenueThenEnterDash();
+  }catch(e){
+    alerts.innerHTML = `<div class="alert alert-err">${escapeHtml(e.error || 'Could not reset password.')}</div>`;
+    btn.disabled=false; btn.textContent='Set password & log in';
+  }
+}
+
+/* ================= LANDING ================= */
+function renderLanding(){
+  $main.innerHTML = `
+    <div class="hero">
+      <h1>REQUEST<br>THE <span class="accent">NIGHT.</span></h1>
+      <div class="pulse-bars"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <p class="tag">Scan the DJ's code, drop your song request, vote up the crowd's favorites — live, from your phone.</p>
+    </div>
+    <div class="role-cards">
+      <button class="role-card" id="goGuest">
+        <div class="glyph">🎧</div>
+        <div><div class="rc-title">I'm at the venue</div><div class="rc-sub">Enter a venue code to request a song</div></div>
+        <div class="chev">›</div>
+      </button>
+      <button class="role-card" id="goDj">
+        <div class="glyph">🎚️</div>
+        <div><div class="rc-title">I'm the DJ</div><div class="rc-sub">Log in or start a free trial</div></div>
+        <div class="chev">›</div>
+      </button>
+    </div>
+    <div class="credit">TRACTAP v2.5.7 &middot; Created by Eugene Swart — EuNic Productions</div>
+  `;
+  document.getElementById('goGuest').onclick = ()=>{ State.view='guestJoin'; render(); };
+  document.getElementById('goDj').onclick = async ()=>{
+    if(State.token){
+      try{
+        const data = await api('/api/auth/me', { auth: true });
+        State.dj = data.dj;
+        State.djTab = 'venue';
+        State.view = 'djDash';
+        return render();
+      }catch(e){ localStorage.removeItem('tractap_token'); State.token=null; }
+    }
+    State.view='djAuth'; render();
+  };
+}
+
+/* ================= GUEST: JOIN ================= */
+function renderGuestJoin(){
+  const params = new URLSearchParams(location.search);
+  const pre = (params.get('venue')||'').toUpperCase();
+  $main.innerHTML = `
+    <div class="back-row"><button id="back">‹ Back</button></div>
+    <div class="hero" style="padding-top:6px;">
+      <h1 style="font-size:38px;">JOIN A <span class="accent">VENUE</span></h1>
+      <p class="tag">Enter the code shown on the DJ's screen or scanned from the QR flyer.</p>
+    </div>
+    <div id="joinErr"></div>
+    <div class="field">
+      <label>Venue code</label>
+      <input id="codeInput" maxlength="6" placeholder="e.g. 8F3KQ2" value="${escapeHtml(pre)}" style="text-transform:uppercase; letter-spacing:0.15em; font-family:'JetBrains Mono',monospace; font-size:18px; text-align:center;">
+    </div>
+    <button class="btn btn-primary" id="joinBtn">Enter queue</button>
+  `;
+  document.getElementById('back').onclick=()=>{ State.view='landing'; render(); };
+  const input = document.getElementById('codeInput');
+  const doJoin = async ()=>{
+    const code = input.value.trim().toUpperCase();
+    if(!code) return;
+    const btn = document.getElementById('joinBtn');
+    btn.disabled = true; btn.textContent = 'Checking…';
+    try{
+      const data = await api(`/api/venues/${code}`);
+      if(!data.venue.isLive){
+        document.getElementById('joinErr').innerHTML = `<div class="alert alert-err">This venue session has ended.</div>`;
+        return;
+      }
+      const q = await api(`/api/venues/${code}/requests`);
+      State.venueCode = code;
+      State.venue = data.venue;
+      State.queue = q.requests;
+      State.view = 'guest';
+      render();
+      beginGuestPolling();
+    }catch(e){
+      document.getElementById('joinErr').innerHTML = `<div class="alert alert-err">${escapeHtml(e.error || 'No live venue found for that code.')}</div>`;
+    }finally{
+      btn.disabled = false; btn.textContent = 'Enter queue';
+    }
+  };
+  document.getElementById('joinBtn').onclick = doJoin;
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') doJoin(); });
+  if(pre) doJoin();
+}
+
+/* ================= GUEST: REQUEST + QUEUE ================= */
+let guestFormErr = "";
+function renderGuest(){
+  const v = State.venue;
+  $main.innerHTML = `
+    <div class="back-row"><button id="back">‹ Leave venue</button></div>
+    <div class="venue-head">
+      <button id="djProfileLink" style="display:flex; align-items:center; gap:12px; background:none; border:none; text-align:left; cursor:pointer; padding:0;">
+        ${v.djAvatarUrl ? `<img src="${escapeHtml(v.djAvatarUrl)}" alt="${escapeHtml(v.djName||'DJ')}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0;">` : ''}
+        <div>
+          <div class="vname">${escapeHtml(v.name)}</div>
+          <div class="vmeta">DJ ${escapeHtml(v.djName || 'Unknown')} &rsaquo;</div>
+        </div>
+      </button>
+      <span class="live-pill"><span class="blip"></span>LIVE &middot; <span id="queueCount">${State.queue.filter(r=>r.status!=='played').length}</span> in queue</span>
+    </div>
+    <div class="card">
+      <h3>Request a song</h3>
+      <div id="reqAlerts">${guestFormErr}</div>
+      <div class="field"><label>Song title</label><input id="songInput" placeholder="e.g. One More Time" maxlength="60"></div>
+      <div class="field"><label>Artist (optional)</label><input id="artistInput" placeholder="e.g. Daft Punk" maxlength="50"></div>
+      <div class="field"><label>Your name (optional)</label><input id="nameInput" placeholder="Shown next to your request" maxlength="24"></div>
+      <button class="btn btn-primary" id="submitReq">Send request</button>
+    </div>
+    <div id="guestQueueWrap"></div>
+  `;
+  document.getElementById('back').onclick = ()=>{ stopPolling(); State.view='guestJoin'; State.venue=null; State.queue=[]; State.venueCode=null; render(); };
+  document.getElementById('submitReq').onclick = submitGuestRequest;
+  const djLink = document.getElementById('djProfileLink');
+  if(djLink && v.djUsername) djLink.onclick = ()=>{ stopPolling(); openDjProfile(v.djUsername, 'guest'); };
+  renderGuestQueueList();
+}
+
+// Refreshes only the queue list (and the live "N in queue" count) —
+// never touches the request form, so polling/voting/submitting can't
+// wipe out whatever the guest is mid-typing in the fields above.
+// Tracks which request IDs the guest view has already painted, so a poll
+// tick only animates rows that are genuinely new — not the whole list —
+// and the newly-submitted request visibly "arrives" as its confirmation.
+let guestKnownIds = null;
+
+function renderGuestQueueList(){
+  const wrap = document.getElementById('guestQueueWrap');
+  if(!wrap) return; // not on the guest view right now
+  const {playing, pending} = sortForDisplay(State.queue);
+
+  const countEl = document.getElementById('queueCount');
+  if(countEl) countEl.textContent = State.queue.filter(r=>r.status!=='played').length;
+
+  const currentIds = new Set(State.queue.map(r=>r.id));
+  const newIds = guestKnownIds ? [...currentIds].filter(id=>!guestKnownIds.has(id)) : [];
+
+  wrap.innerHTML = `
+    ${playing.length ? `<h3 style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Now Playing</h3>` : ''}
+    ${playing.map(r=>rowHtml(r, null, newIds.includes(r.id))).join('')}
+    <h3 style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin:14px 0 8px;">Up Next ${pending.length? '&middot; '+pending.length : ''}</h3>
+    ${pending.length ? pending.map((r,i)=>rowHtml(r,i+1, newIds.includes(r.id))).join('') : `<div class="empty"><div class="big">🎵</div>No requests yet. Be the first to drop one!</div>`}
+  `;
+  guestKnownIds = currentIds;
+  wrap.querySelectorAll('[data-vote]').forEach(btn=>{
+    btn.onclick = ()=> voteRequest(btn.getAttribute('data-vote'));
+  });
+}
+
+function rowHtml(r, rank, isNew){
+  const isPlaying = r.status === 'playing';
+  return `
+  <div class="qrow ${isPlaying?'playing':''} ${isNew?'qrow-new':''}">
+    ${rank ? `<div class="rank">${rank}</div>` : `<div class="vinyl"></div>`}
+    <div class="info">
+      <div class="song">${escapeHtml(r.song)}</div>
+      <div class="artist">${escapeHtml(r.artist || '')}</div>
+      ${r.requester ? `<div class="who">requested by ${escapeHtml(r.requester)}</div>` : ''}
+      ${isPlaying ? `<div class="waveform"><span style="height:60%;animation-delay:0s"></span><span style="height:100%;animation-delay:.1s"></span><span style="height:40%;animation-delay:.2s"></span><span style="height:80%;animation-delay:.3s"></span><span style="height:55%;animation-delay:.4s"></span></div>` : ''}
+    </div>
+    ${!isPlaying ? `<button class="vote-btn" data-vote="${r.id}"><span class="arrow">▲</span><span class="n">${r.votes}</span></button>` : ''}
+  </div>`;
+}
+
+async function submitGuestRequest(){
+  const song = document.getElementById('songInput').value.trim();
+  const artist = document.getElementById('artistInput').value.trim();
+  const nm = document.getElementById('nameInput').value.trim();
+  const alerts = document.getElementById('reqAlerts');
+  guestFormErr = "";
+  if(!song){
+    guestFormErr = `<div class="alert alert-err">Enter a song title.</div>`;
+    alerts.innerHTML = guestFormErr; return;
+  }
+  const btn = document.getElementById('submitReq');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try{
+    await api(`/api/venues/${State.venueCode}/requests`, {
+      method: 'POST',
+      body: { song, artist, requester: nm, deviceId: getDevice() },
+    });
+    const q = await api(`/api/venues/${State.venueCode}/requests`);
+    State.queue = q.requests;
+    document.getElementById('songInput').value='';
+    document.getElementById('artistInput').value='';
+    alerts.innerHTML = '';
+    suppressPollingBriefly();
+    renderGuestQueueList(); // the new request animates in as its own confirmation
+    toast('Request sent 🎶');
+    btn.textContent = 'Added ✓';
+    btn.classList.add('success');
+    setTimeout(()=>{
+      if(!btn.isConnected) return; // guest may have left the page already
+      btn.classList.remove('success');
+      btn.textContent = 'Send request';
+      btn.disabled = false;
+    }, 900);
+  }catch(e){
+    guestFormErr = `<div class="alert ${e.status===402?'alert-warn':e.status===429?'alert-warn':'alert-err'}">${escapeHtml(e.error)}</div>`;
+    alerts.innerHTML = guestFormErr;
+    btn.disabled = false; btn.textContent = 'Send request';
+  }
+}
+
+async function voteRequest(id){
+  try{
+    await api(`/api/requests/${id}/vote`, { method:'POST', body:{ deviceId: getDevice() } });
+    const q = await api(`/api/venues/${State.venueCode}/requests`);
+    State.queue = q.requests;
+    suppressPollingBriefly();
+    renderGuestQueueList();
+  }catch(e){ toast(e.error || 'Could not register vote'); }
+}
+
+/* ================= DJ AUTH ================= */
+let djAuthErr = "";
+let djAuthMode = "login"; // login | signup | forgot
+function renderDjAuth(){
+  const googleReady = window.TRACTAP_GOOGLE_CLIENT_ID && !window.TRACTAP_GOOGLE_CLIENT_ID.startsWith('YOUR_');
+
+  if(djAuthMode === 'forgot'){
+    $main.innerHTML = `
+      <div class="back-row"><button id="back">‹ Back</button></div>
+      <div class="hero" style="padding-top:6px;">
+        <h1 style="font-size:34px;">RESET <span class="accent">PASSWORD</span></h1>
+        <p class="tag">Enter the email on your DJ account and we'll send a reset link.</p>
+      </div>
+      <div id="djAuthAlerts">${djAuthErr}</div>
+      <div class="field"><label>Email</label><input id="forgotEmail" type="email" placeholder="you@example.com"></div>
+      <button class="btn btn-primary" id="forgotSubmit">Send reset link</button>
+    `;
+    document.getElementById('back').onclick=()=>{ djAuthMode='login'; djAuthErr=''; renderDjAuth(); };
+    document.getElementById('forgotSubmit').onclick = doForgotPassword;
+    return;
+  }
+
+  $main.innerHTML = `
+    <div class="back-row"><button id="back">‹ Back</button></div>
+    <div class="hero" style="padding-top:6px;">
+      <h1 style="font-size:38px;">DJ <span class="accent">ACCESS</span></h1>
+      <p class="tag">${djAuthMode==='login' ? 'Log in to manage your live queue.' : 'Start your free trial — 5 requests, no card required.'}</p>
+    </div>
+    <div class="tabs">
+      <button class="tab ${djAuthMode==='login'?'active':''}" data-m="login">Log In</button>
+      <button class="tab ${djAuthMode==='signup'?'active':''}" data-m="signup">Sign Up</button>
+    </div>
+    <div id="djAuthAlerts">${djAuthErr}</div>
+    ${googleReady ? `<div id="googleBtnWrap" style="margin-bottom:14px; display:flex; justify-content:center;"></div>
+    <div style="display:flex; align-items:center; gap:10px; margin:14px 0; color:var(--text-faint); font-size:12px;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>or<div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>` : ''}
+    ${djAuthMode==='signup' ? `<div class="field"><label>DJ / stage name</label><input id="djName" placeholder="e.g. DJ Nova" maxlength="30"></div>` : ''}
+    ${djAuthMode==='signup' ? `<div class="field"><label>Email</label><input id="djEmail" type="email" placeholder="you@example.com"></div>` : ''}
+    <div class="field"><label>Username</label><input id="djUser" placeholder="e.g. djnova" maxlength="24" autocapitalize="off"></div>
+    <div class="field"><label>Password</label><input id="djPass" type="password" placeholder="••••••••" maxlength="60"></div>
+    <button class="btn btn-primary" id="djSubmit">${djAuthMode==='login' ? 'Log in' : 'Create free trial account'}</button>
+    ${djAuthMode==='login' ? `<button class="btn-link" id="forgotLink" style="margin-top:14px;width:100%;text-align:center;">Forgot password?</button>` : ''}
+  `;
+  document.getElementById('back').onclick=()=>{ State.view='landing'; render(); };
+  document.querySelectorAll('.tab').forEach(t=> t.onclick = ()=>{ djAuthMode=t.getAttribute('data-m'); djAuthErr=""; renderDjAuth(); });
+  document.getElementById('djSubmit').onclick = djAuthMode==='login' ? doDjLogin : doDjSignup;
+  const forgotLink = document.getElementById('forgotLink');
+  if(forgotLink) forgotLink.onclick = ()=>{ djAuthMode='forgot'; djAuthErr=''; renderDjAuth(); };
+
+  if(googleReady) renderGoogleButton();
+}
+
+function renderGoogleButton(){
+  if(!window.google || !window.google.accounts || !window.google.accounts.id) return;
+  try{
+    window.google.accounts.id.initialize({
+      client_id: window.TRACTAP_GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential,
+    });
+    const wrap = document.getElementById('googleBtnWrap');
+    if(wrap) window.google.accounts.id.renderButton(wrap, { theme:'filled_black', size:'large', shape:'pill', width:280 });
+  }catch(e){ /* Google script may not have loaded yet — non-fatal */ }
+}
+
+async function handleGoogleCredential(response){
+  djAuthErr = "";
+  try{
+    const data = await api('/api/auth/google', { method:'POST', body:{ credential: response.credential } });
+    State.token = data.token; localStorage.setItem('tractap_token', data.token);
+    State.dj = data.dj;
+    await loadDjLiveVenueThenEnterDash();
+  }catch(e){
+    djAuthErr = `<div class="alert alert-err">${escapeHtml(e.error || 'Google sign-in failed.')}</div>`;
+    renderDjAuth();
+  }
+}
+
+async function loadDjLiveVenueThenEnterDash(){
+  try{
+    const mine = await api('/api/venues/mine', { auth:true });
+    const live = mine.venues.find(v=>v.isLive);
+    if(live){
+      State.venueCode = live.code; State.venue = live;
+      const q = await api(`/api/venues/${live.code}/requests`);
+      State.queue = q.requests;
+      State.djTab = 'queue';
+    }else{
+      State.djTab = 'venue';
+    }
+  }catch(e){ State.djTab = 'venue'; }
+  State.view='djDash';
+  render();
+}
+
+async function doForgotPassword(){
+  const email = document.getElementById('forgotEmail').value.trim();
+  if(!email){ djAuthErr = `<div class="alert alert-err">Enter your email.</div>`; renderDjAuth(); return; }
+  const btn = document.getElementById('forgotSubmit'); btn.disabled=true; btn.textContent='Sending…';
+  try{
+    const data = await api('/api/auth/forgot-password', { method:'POST', body:{ email } });
+    djAuthErr = `<div class="alert alert-ok">${escapeHtml(data.message || 'If that email is on an account, a reset link is on its way.')}</div>`;
+  }catch(e){
+    djAuthErr = `<div class="alert alert-err">${escapeHtml(e.error || 'Something went wrong.')}</div>`;
+  }
+  renderDjAuth();
+}
+
+async function doDjSignup(){
+  const djName = document.getElementById('djName').value.trim();
+  const email = document.getElementById('djEmail').value.trim();
+  const user = document.getElementById('djUser').value.trim().toLowerCase();
+  const pass = document.getElementById('djPass').value;
+  if(!djName || !email || !user || !pass){ djAuthErr = `<div class="alert alert-err">Fill in all fields.</div>`; renderDjAuth(); return; }
+  const btn = document.getElementById('djSubmit'); btn.disabled=true; btn.textContent='Creating…';
+  try{
+    const data = await api('/api/auth/signup', { method:'POST', body:{ username:user, email, password:pass, displayName:djName } });
+    State.token = data.token; localStorage.setItem('tractap_token', data.token);
+    State.dj = data.dj; State.djTab='venue'; State.view='djDash';
+    toast('Trial account created — welcome to TRACTAP');
+    render();
+  }catch(e){
+    djAuthErr = `<div class="alert alert-err">${escapeHtml(e.error)}</div>`; renderDjAuth();
+  }
+}
+
+async function doDjLogin(){
+  const user = document.getElementById('djUser').value.trim().toLowerCase();
+  const pass = document.getElementById('djPass').value;
+  if(!user || !pass){ djAuthErr = `<div class="alert alert-err">Enter username and password.</div>`; renderDjAuth(); return; }
+  const btn = document.getElementById('djSubmit'); btn.disabled=true; btn.textContent='Checking…';
+  try{
+    const data = await api('/api/auth/login', { method:'POST', body:{ username:user, password:pass } });
+    State.token = data.token; localStorage.setItem('tractap_token', data.token);
+    State.dj = data.dj;
+    await loadDjLiveVenueThenEnterDash();
+  }catch(e){
+    djAuthErr = `<div class="alert alert-err">${escapeHtml(e.error)}</div>`; renderDjAuth();
+  }
+}
+
+/* ================= DJ DASHBOARD ================= */
+const DJ_TAB_ORDER = ['queue','venue','profile','analytics'];
+let djTabDir = 1; // which way the tab body should slide in from
+
+function playTabEnter(el, dir){
+  el.style.setProperty('--tab-dir', dir);
+  el.classList.remove('tab-enter');
+  void el.offsetWidth; // restart animation
+  el.classList.add('tab-enter');
+}
+
+function renderDjDash(){
+  const dj = State.dj;
+  $main.innerHTML = `
+    <div class="back-row">
+      <button id="logout">⎋ Log out</button>
+      <span style="margin-left:auto; display:flex; align-items:center; gap:8px; color:var(--text-dim); font-size:12.5px;">
+        ${dj.avatarUrl ? `<img src="${escapeHtml(dj.avatarUrl)}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">` : ''}
+        ${escapeHtml(dj.displayName)}
+      </span>
+    </div>
+    <div class="tabs">
+      <button class="tab ${State.djTab==='queue'?'active':''}" data-t="queue">Queue</button>
+      <button class="tab ${State.djTab==='venue'?'active':''}" data-t="venue">Venue &amp; QR</button>
+      <button class="tab ${State.djTab==='profile'?'active':''}" data-t="profile">Profile</button>
+      <button class="tab ${State.djTab==='analytics'?'active':''}" data-t="analytics">Analytics</button>
+    </div>
+    <div id="djTabBody"></div>
+  `;
+  document.getElementById('logout').onclick = ()=>{
+    stopPolling();
+    localStorage.removeItem('tractap_token');
+    State.token=null; State.dj=null; State.venue=null; State.venueCode=null; State.queue=[];
+    State.view='landing'; render();
+  };
+  document.querySelectorAll('.tab').forEach(t=> t.onclick = ()=>{
+    const next = t.getAttribute('data-t');
+    djTabDir = DJ_TAB_ORDER.indexOf(next) >= DJ_TAB_ORDER.indexOf(State.djTab) ? 1 : -1;
+    State.djTab = next;
+    renderDjDash();
+  });
+
+  if(State.venueCode) beginDjQueuePolling();
+  else stopPolling();
+
+  const body = document.getElementById('djTabBody');
+  playTabEnter(body, djTabDir);
+  if(State.djTab==='queue') return renderDjQueueTab(body);
+  if(State.djTab==='venue') return renderDjVenueTab(body);
+  if(State.djTab==='profile'){
+    const r = renderDjProfileTab(body);
+    try{ enhanceProfileTab(body); }catch(e){ console.warn('profile enhance skipped', e); }   // v2.5.6
+    return r;
+  }
+  if(State.djTab==='analytics') return renderDjAnalyticsTab(body);
+}
+
+function renderDjQueueTab(body){
+  if(!State.venueCode){
+    body.innerHTML = `<div class="empty"><div class="big">🪩</div>No active venue yet.<br><br><button class="btn btn-ghost" id="mkV" style="width:auto;padding:10px 16px;">Create a venue</button></div>`;
+    document.getElementById('mkV').onclick = ()=>{ State.djTab='venue'; renderDjDash(); };
+    return;
+  }
+  const v = State.venue || {};
+  const {playing, pending, played} = sortForDisplay(State.queue);
+  const trialNote = v.plan==='trial' ? `
+    <div class="card">
+      <h3>Free trial usage</h3>
+      <div style="display:flex;justify-content:space-between;font-size:13px;"><span>${v.trialRequestCount||0} / ${v.trialLimit||5} requests used</span><span class="mono" style="color:var(--amber)">TRIAL</span></div>
+      <div class="trial-bar-track"><div class="trial-bar-fill" style="width:${Math.min(100,((v.trialRequestCount||0)/(v.trialLimit||5))*100)}%"></div></div>
+    </div>` : '';
+  const alertsOn = alertsEnabled();
+  const alertsCard = `
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="font-size:13px;">🔔 Silent request alerts
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Screen flash + vibration. Never plays a sound.</div></div>
+      <button class="btn btn-ghost" id="alertsToggle" style="width:auto;padding:8px 14px;">${alertsOn ? 'On' : 'Off'}</button>
+    </div>
+    ${alertsOn && ('Notification' in window) && Notification.permission==='default' ? `<button class="btn btn-ghost" id="notifPerm" style="margin:-4px 0 12px;font-size:12px;">Also show in notification centre (silent)</button>` : ''}`;
+  body.innerHTML = `
+    ${alertsCard}
+    ${trialNote}
+    <div class="live-pill" style="margin-bottom:14px;"><span class="blip"></span>${escapeHtml(v.name)} &middot; ${pending.length} pending</div>
+    ${playing.length ? `<h3 style="font-size:12px;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;">Now Playing</h3>` : ''}
+    ${playing.map(r=>djRow(r,true)).join('')}
+    <h3 style="font-size:12px;color:var(--text-dim);text-transform:uppercase;margin:14px 0 8px;">Pending ${pending.length?'&middot; '+pending.length:''}</h3>
+    ${pending.length ? pending.map(r=>djRow(r,false)).join('') : `<div class="empty">No pending requests.</div>`}
+    ${played.length ? `<h3 style="font-size:12px;color:var(--text-dim);text-transform:uppercase;margin:14px 0 8px;">Played &middot; ${played.length}</h3>${played.slice(0,8).map(r=>djRow(r,false,true)).join('')}` : ''}
+  `;
+  const permBtn = document.getElementById('notifPerm');
+  if(permBtn) permBtn.onclick = async ()=>{
+    try{ await Notification.requestPermission(); }catch(e){}
+    renderDjQueueTab(body);
+  };
+  document.getElementById('alertsToggle').onclick = async ()=>{
+    const turnOn = !alertsEnabled();
+    localStorage.setItem('tractap_alerts', turnOn ? 'on' : 'off');
+    if(turnOn){
+      // Must happen inside this tap, or the browser won't show the prompt.
+      if('Notification' in window && Notification.permission === 'default'){
+        try{ await Notification.requestPermission(); }catch(e){}
+      }
+      flashScreen();                                   // preview what an alert looks like
+      if(navigator.vibrate) navigator.vibrate([120, 70, 120]);
+    }
+    renderDjQueueTab(body);
+  };
+  body.querySelectorAll('[data-play]').forEach(b=> b.onclick = ()=> updateRequestStatus(b.getAttribute('data-play'), 'playing'));
+  body.querySelectorAll('[data-played]').forEach(b=> b.onclick = ()=> updateRequestStatus(b.getAttribute('data-played'), 'played'));
+  body.querySelectorAll('[data-del]').forEach(b=> b.onclick = ()=> deleteRequest(b.getAttribute('data-del')));
+}
+
+function djRow(r, isPlaying, isPlayed){
+  return `
+  <div class="qrow ${isPlaying?'playing':''}">
+    <div class="${isPlaying?'vinyl':'rank'}">${isPlaying?'':'♪'}</div>
+    <div class="info">
+      <div class="song">${escapeHtml(r.song)}</div>
+      <div class="artist">${escapeHtml(r.artist||'')}</div>
+      <div class="who">${r.requester?('by '+escapeHtml(r.requester)+' &middot; '):''}${r.votes} votes</div>
+    </div>
+    <div class="row-actions">
+      ${!isPlaying && !isPlayed ? `<button class="icon-btn" data-play="${r.id}" title="Mark now playing">▶</button>` : ''}
+      ${isPlaying ? `<button class="icon-btn" data-played="${r.id}" title="Mark played">✓</button>` : ''}
+      ${!isPlayed ? `<button class="icon-btn" data-del="${r.id}" title="Delete" style="color:var(--danger);">✕</button>` : ''}
+    </div>
+  </div>`;
+}
+
+async function updateRequestStatus(id, status){
+  try{
+    await api(`/api/requests/${id}`, { method:'PATCH', auth:true, body:{ status } });
+    const q = await api(`/api/venues/${State.venueCode}/requests`);
+    State.queue = q.requests;
+    suppressPollingBriefly();
+    renderDjQueueTab(document.getElementById('djTabBody'));
+  }catch(e){ toast(e.error || 'Could not update status'); }
+}
+async function deleteRequest(id){
+  try{
+    await api(`/api/requests/${id}`, { method:'DELETE', auth:true });
+    const q = await api(`/api/venues/${State.venueCode}/requests`);
+    State.queue = q.requests;
+    suppressPollingBriefly();
+    renderDjQueueTab(document.getElementById('djTabBody'));
+    toast('Request removed');
+  }catch(e){ toast(e.error || 'Could not delete'); }
+}
+
+function renderDjVenueTab(body){
+  const v = State.venue;
+  if(!v){
+    body.innerHTML = `
+      <div class="card">
+        <h3>Create a venue</h3>
+        <p class="hint" style="margin-bottom:12px;">Each venue gets its own code, QR flyer, and request link. Sessions expire automatically.</p>
+        <div id="venueErr"></div>
+        <div class="field"><label>Venue / event name</label><input id="venueName" placeholder="e.g. Nova @ The Loft" maxlength="40"></div>
+        <div class="field">
+          <label>Session length</label>
+          <select id="venueHours">
+            <option value="4">4 hours</option>
+            <option value="6" selected>6 hours</option>
+            <option value="12">12 hours</option>
+            <option value="24">24 hours</option>
+            <option value="72">3 days (festival)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="createVenue">Generate code &amp; QR</button>
+      </div>`;
+    document.getElementById('createVenue').onclick = createVenue;
+    return;
+  }
+  const link = v.shareLink || shareLink(v.code);
+  body.innerHTML = `
+    <div class="card" style="text-align:center;">
+      <h3 style="text-align:left;">Scan to request</h3>
+      <div class="qr-box"><img src="${qrUrl(link)}" alt="QR code linking to the request page"></div>
+      <div class="code-badge">${escapeHtml(v.code)}</div>
+      <div class="link-row">
+        <span class="u">${escapeHtml(link)}</span>
+        <button class="btn btn-ghost btn-sm" id="copyLink">Copy</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Session</h3>
+      <div style="font-size:14px;font-weight:600;">${escapeHtml(v.name)}</div>
+      <div class="hint">Expires ${v.expiresAt ? new Date(v.expiresAt).toLocaleString() : '—'}</div>
+      <button class="btn btn-danger" style="margin-top:14px;" id="endVenue">End this venue now</button>
+    </div>`;
+  document.getElementById('copyLink').onclick = async ()=>{
+    try{ await navigator.clipboard.writeText(link); toast('Link copied'); }
+    catch(e){ toast('Copy failed — long-press the link to copy'); }
+  };
+  document.getElementById('endVenue').onclick = async ()=>{
+    try{
+      await api(`/api/venues/${v.code}`, { method:'DELETE', auth:true });
+      stopPolling();
+      State.venue = null; State.venueCode = null; State.queue=[];
+      toast('Venue ended');
+      renderDjVenueTab(body);
+    }catch(e){ toast(e.error || 'Could not end venue'); }
+  };
+}
+
+async function createVenue(){
+  const name = document.getElementById('venueName').value.trim();
+  const hours = parseInt(document.getElementById('venueHours').value,10);
+  if(!name){
+    document.getElementById('venueErr').innerHTML = `<div class="alert alert-err">Give your venue a name.</div>`;
+    return;
+  }
+  const btn = document.getElementById('createVenue'); btn.disabled=true; btn.textContent='Generating…';
+  try{
+    const data = await api('/api/venues', { method:'POST', auth:true, body:{ name, hours } });
+    State.venue = data.venue; State.venueCode = data.venue.code; State.queue = [];
+    toast('Venue is live 🎉');
+    renderDjDash();
+  }catch(e){
+    document.getElementById('venueErr').innerHTML = `<div class="alert alert-err">${escapeHtml(e.error)}</div>`;
+    btn.disabled=false; btn.textContent='Generate code & QR';
+  }
+}
+
+function renderDjProfileTab(body){
+  const dj = State.dj;
+  const links = dj.socialLinks && dj.socialLinks.length ? dj.socialLinks : [{platform:'Instagram',handle:''},{platform:'SoundCloud',handle:''}];
+  body.innerHTML = `
+    <div class="card" style="text-align:center;">
+      <h3 style="text-align:left;">Profile picture</h3>
+      <img id="avatarPreview" src="${dj.avatarUrl ? escapeHtml(dj.avatarUrl) : ''}" alt="Profile picture" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid var(--border);background:var(--bg-elev-2);display:${dj.avatarUrl ? 'block':'none'};margin:0 auto 12px;">
+      <div id="avatarPlaceholder" style="width:96px;height:96px;border-radius:50%;background:var(--bg-elev-2);border:2px solid var(--border);display:${dj.avatarUrl ? 'none':'flex'};align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px;">🎧</div>
+      <input type="file" id="avatarFile" accept="image/png,image/jpeg,image/webp" style="display:none;">
+      <button class="btn btn-ghost btn-sm" id="avatarPickBtn">Upload photo</button>
+      <p class="hint" style="margin-top:8px;">JPG, PNG, or WEBP — cropped to a square automatically.</p>
+    </div>
+    <div class="card">
+      <h3>DJ profile</h3>
+      <div class="field"><label>Display name</label><input id="pName" value="${escapeHtml(dj.displayName)}" maxlength="30"></div>
+      <div class="field"><label>Bio</label><textarea id="pBio" rows="3" maxlength="160" placeholder="A line about your sets/style">${escapeHtml(dj.bio||'')}</textarea></div>
+    </div>
+    <div class="card">
+      <h3>Your public profile</h3>
+      <p class="hint" style="margin-bottom:10px;">Anyone with this link can see your bio, photo, and socials — and jump straight into your queue when you're live.</p>
+      <div class="link-row">
+        <span class="u">${escapeHtml(djProfileLink(dj.username))}</span>
+        <button class="btn btn-ghost btn-sm" id="copyProfileLink">Copy</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Social &amp; playlist links</h3>
+      <div id="socialWrap">
+        ${links.map((l,i)=>`
+        <div class="social-row">
+          <span class="plat">${escapeHtml(l.platform)}</span>
+          <input data-si="${i}" data-plat="${escapeHtml(l.platform)}" value="${escapeHtml(l.handle)}" placeholder="link or @handle" style="flex:1;background:var(--bg-elev-2);border:1px solid var(--border);color:var(--text);padding:9px 11px;border-radius:10px;font-size:13.5px;">
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <h3>Streaming integrations</h3>
+      <div class="field"><label>Spotify playlist link</label><input id="spotifyLink" value="${escapeHtml(dj.spotifyLink||'')}" placeholder="https://open.spotify.com/playlist/…"></div>
+      <div class="field"><label>Apple Music playlist link</label><input id="appleLink" value="${escapeHtml(dj.appleLink||'')}" placeholder="https://music.apple.com/playlist/…"></div>
+      <p class="hint">Full catalog search requires connecting Spotify/Apple developer accounts via OAuth — outside this backend's current scope.</p>
+    </div>
+    <button class="btn btn-primary" id="saveProfile">Save profile</button>
+  `;
+  document.getElementById('saveProfile').onclick = async ()=>{
+    const inputs = body.querySelectorAll('[data-si]');
+    const newLinks = [];
+    inputs.forEach(inp=> newLinks.push({platform: inp.getAttribute('data-plat'), handle: inp.value.trim()}));
+    const btn = document.getElementById('saveProfile'); btn.disabled=true; btn.textContent='Saving…';
+    try{
+      const data = await api('/api/dj/profile', { method:'PUT', auth:true, body:{
+        displayName: document.getElementById('pName').value.trim(),
+        bio: document.getElementById('pBio').value.trim(),
+        spotifyLink: document.getElementById('spotifyLink').value.trim(),
+        appleLink: document.getElementById('appleLink').value.trim(),
+        socialLinks: newLinks,
+      }});
+      State.dj = data.dj;
+      toast('Profile saved');
+      try{ profileAfterSave(body); }catch(e){}   // v2.5.6 — tuck saved sections away
+    }catch(e){ toast(e.error || 'Could not save profile'); }
+    finally{ btn.disabled=false; btn.textContent='Save profile'; }
+  };
+
+  document.getElementById('avatarPickBtn').onclick = ()=> document.getElementById('avatarFile').click();
+
+  document.getElementById('copyProfileLink').onclick = async ()=>{
+    try{ await navigator.clipboard.writeText(djProfileLink(dj.username)); toast('Link copied'); }
+    catch(e){ toast('Copy failed — long-press the link to copy'); }
+  };
+  document.getElementById('avatarFile').onchange = async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    if(file.size > 5*1024*1024){ toast('Image is too large — 5MB max.'); return; }
+    const pickBtn = document.getElementById('avatarPickBtn');
+    pickBtn.disabled = true; pickBtn.textContent = 'Uploading…';
+    try{
+      const data = await apiUpload('/api/dj/avatar', file, 'avatar');
+      State.dj.avatarUrl = data.avatarUrl + '?v=' + Date.now(); // cache-bust
+      const img = document.getElementById('avatarPreview');
+      img.src = State.dj.avatarUrl;
+      img.style.display = 'block';
+      document.getElementById('avatarPlaceholder').style.display = 'none';
+      toast('Profile picture updated');
+    }catch(err){
+      toast(err.error || 'Could not upload image');
+    }finally{
+      pickBtn.disabled = false; pickBtn.textContent = 'Upload photo';
+    }
+  };
+}
+
+async function renderDjAnalyticsTab(body){
+  body.innerHTML = `<div class="loading"><div class="spinner"></div>Loading analytics…</div>`;
+  if(!State.venueCode){
+    body.innerHTML = `<div class="empty">Create a venue first to see analytics.</div>`;
+    return;
+  }
+  try{
+    const a = await api(`/api/venues/${State.venueCode}/analytics`, { auth:true });
+    body.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat"><div class="num">${a.totalRequests}</div><div class="lbl">Requests</div></div>
+        <div class="stat"><div class="num">${a.totalVotes}</div><div class="lbl">Total Votes</div></div>
+        <div class="stat"><div class="num">${a.playedCount}</div><div class="lbl">Played</div></div>
+      </div>
+      <div class="card">
+        <h3>Top requested</h3>
+        ${a.topSong ? `<div style="font-weight:700;">${escapeHtml(a.topSong.song)}</div><div class="hint">${escapeHtml(a.topSong.artist||'')} &middot; ${a.topSong.votes} votes</div>` : `<div class="hint">No data yet.</div>`}
+      </div>
+      <div class="card">
+        <h3>Export</h3>
+        <p class="hint" style="margin-bottom:12px;">Download tonight's full request log as CSV.</p>
+        <button class="btn btn-ghost" id="exportCsv">Export CSV</button>
+      </div>
+    `;
+    document.getElementById('exportCsv').onclick = async ()=>{
+      try{
+        const blob = await apiBlob(`/api/venues/${State.venueCode}/export.csv`);
+        const url = URL.createObjectURL(blob);
+        const a2 = document.createElement('a');
+        a2.href = url; a2.download = `${State.venue.name.replace(/\s+/g,'_')}_requests.csv`;
+        document.body.appendChild(a2); a2.click(); a2.remove();
+        URL.revokeObjectURL(url);
+      }catch(e){ toast('Export failed'); }
+    };
+  }catch(e){
+    body.innerHTML = `<div class="alert alert-err">${escapeHtml(e.error || 'Could not load analytics')}</div>`;
+  }
+}
+
+/* ================= PROFILE TAB ENHANCEMENTS (v2.5.6) =================
+   Runs AFTER renderDjProfileTab() has built its markup, so the original template and the
+   Save / avatar-upload handlers are untouched. Collapsed sections are only hidden (display:none),
+   never removed — Save still reads every field. A failure here can never break the tab
+   (the call site is wrapped in try/catch). */
+const PF_SOCIAL_CORE = ['Instagram','TikTok','YouTube','Facebook','SoundCloud'];
+const PF_SOCIAL_CHOICES = ['Instagram','TikTok','YouTube','Facebook','SoundCloud','X','Mixcloud','Twitch','Website'];
+const PF_INPUT_STYLE = 'flex:1;min-width:0;background:var(--bg-elev-2);border:1px solid var(--border);color:var(--text);padding:9px 11px;border-radius:10px;font-size:13.5px;';
+
+function pfSocialRow(platform, handle, custom){
+  const row = document.createElement('div');
+  row.className = 'social-row';
+  const nameEl = custom
+    ? `<input class="plat-name" maxlength="30" placeholder="Name" value="${escapeHtml(platform)}" aria-label="Link name">`
+    : `<span class="plat">${escapeHtml(platform)}</span>`;
+  row.innerHTML = `${nameEl}
+    <input data-si="" data-plat="${escapeHtml(platform || 'Link')}" value="${escapeHtml(handle || '')}" placeholder="link or @handle" style="${PF_INPUT_STYLE}">
+    <button type="button" class="pf-x" aria-label="Remove link">✕</button>`;
+  pfWireRow(row);
+  return row;
+}
+function pfWireRow(row){
+  const val = row.querySelector('[data-si]');
+  val.style.minWidth = '0';   // lets long saved links shrink instead of pushing ✕ outside the card
+  const nm = row.querySelector('.plat-name');
+  if(nm) nm.addEventListener('input', ()=>{ val.setAttribute('data-plat', nm.value.trim() || 'Link'); });
+  let x = row.querySelector('.pf-x');
+  if(!x){
+    x = document.createElement('button');
+    x.type = 'button'; x.className = 'pf-x'; x.setAttribute('aria-label', 'Remove link'); x.textContent = '✕';
+    row.appendChild(x);
+  }
+  x.onclick = ()=>{ row.remove(); document.dispatchEvent(new Event('pf-dirty')); };
+}
+
+function pfVal(body, sel){ const el = body.querySelector(sel); return el ? el.value.trim() : ''; }
+function pfSocialData(body){
+  return Array.from(body.querySelectorAll('[data-si]'))
+    .map(i => ({ platform: i.getAttribute('data-plat') || 'Link', handle: i.value.trim() }))
+    .filter(l => l.handle);
+}
+
+function enhanceProfileTab(body){
+  const dj = State.dj || {};
+  const cards = Array.from(body.children).filter(el => el.classList && el.classList.contains('card'));
+  const find = t => cards.find(c => { const h = c.querySelector('h3'); return h && h.textContent.trim().toLowerCase().startsWith(t); });
+  const picC = find('profile picture'), infoC = find('dj profile'), socC = find('social'), strC = find('streaming');
+  const saveBtn = body.querySelector('#saveProfile');
+  if(!saveBtn) return;
+
+  /* --- social editor: always offer the main platforms, allow removing, allow adding anything --- */
+  const wrap = body.querySelector('#socialWrap');
+  if(wrap){
+    wrap.querySelectorAll('.social-row').forEach(pfWireRow);
+    const have = Array.from(wrap.querySelectorAll('[data-si]')).map(i => (i.getAttribute('data-plat') || '').toLowerCase());
+    PF_SOCIAL_CORE.forEach(p => { if(!have.includes(p.toLowerCase())) wrap.appendChild(pfSocialRow(p, '')); });
+
+    const add = document.createElement('div');
+    add.className = 'pf-add';
+    add.innerHTML = `
+      <select id="pfAddSel" aria-label="Add another link">
+        <option value="">Add another link…</option>
+        ${PF_SOCIAL_CHOICES.map(p => `<option value="${p}">${p}</option>`).join('')}
+        <option value="__custom">Other (name it yourself)…</option>
+      </select>
+      <button type="button" class="btn btn-ghost btn-sm" id="pfAddBtn">+ Add</button>`;
+    wrap.after(add);
+    const hint = document.createElement('p');
+    hint.className = 'hint';
+    hint.style.marginTop = '8px';
+    hint.textContent = 'Use “Other” for any new platform or link — give it a name and paste the URL. Remove a row with ✕, then Save.';
+    add.after(hint);
+
+    add.querySelector('#pfAddBtn').onclick = ()=>{
+      const sel = add.querySelector('#pfAddSel');
+      const v = sel.value;
+      if(!v){ toast('Choose a platform first'); return; }
+      if(v !== '__custom'){
+        const existing = Array.from(wrap.querySelectorAll('[data-si]')).find(i => (i.getAttribute('data-plat') || '').toLowerCase() === v.toLowerCase());
+        if(existing){ existing.focus(); toast(v + ' is already in your list'); sel.value = ''; return; }
+      }
+      const row = pfSocialRow(v === '__custom' ? '' : v, '', v === '__custom');
+      wrap.appendChild(row);
+      (row.querySelector('.plat-name') || row.querySelector('[data-si]')).focus();
+      sel.value = '';
+      pfDirty(body);
+    };
+  }
+
+  /* --- collapsible sections --- */
+  const chips = items => items.length ? items.map(t => `<span class="pf-chip">${t}</span>`).join('') : '<span>Nothing added yet.</span>';
+  const defs = [
+    { card: picC,  has: () => !!State.dj.avatarUrl,
+      sum: () => `${State.dj.avatarUrl ? `<img class="pf-av" src="${escapeHtml(State.dj.avatarUrl)}" alt="">` : ''}Profile photo set` },
+    { card: infoC, has: () => !!pfVal(body, '#pBio'),
+      sum: () => { const b = pfVal(body, '#pBio'); return `<b style="color:var(--text)">${escapeHtml(pfVal(body, '#pName'))}</b>${b ? ' — ' + escapeHtml(b.length > 90 ? b.slice(0, 90) + '…' : b) : ''}`; } },
+    { card: socC,  has: () => pfSocialData(body).length > 0,
+      sum: () => chips(pfSocialData(body).map(l => `${socialIcon(l.platform)} ${escapeHtml(l.platform)}`)) },
+    { card: strC,  has: () => !!(pfVal(body, '#spotifyLink') || pfVal(body, '#appleLink')),
+      sum: () => chips([pfVal(body, '#spotifyLink') ? '🎧 Spotify' : '', pfVal(body, '#appleLink') ? '🍎 Apple Music' : ''].filter(Boolean)) },
+  ].filter(d => d.card);
+
+  const secs = defs.map(d => {
+    const h3 = d.card.querySelector('h3');
+    d.card.classList.add('pf-sec');
+    const head = document.createElement('div'); head.className = 'pf-head';
+    h3.parentNode.insertBefore(head, h3); head.appendChild(h3);
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'pf-toggle'; head.appendChild(btn);
+    const sum = document.createElement('div'); sum.className = 'pf-sum'; head.after(sum);
+    const sec = {
+      def: d,
+      collapse(){ sum.innerHTML = d.sum(); d.card.classList.add('pf-collapsed'); btn.textContent = 'Edit'; btn.setAttribute('aria-expanded', 'false'); },
+      expand(){ d.card.classList.remove('pf-collapsed'); btn.textContent = 'Hide'; btn.setAttribute('aria-expanded', 'true'); },
+      isOpen(){ return !d.card.classList.contains('pf-collapsed'); },
+    };
+    btn.onclick = ()=>{ sec.isOpen() ? sec.collapse() : sec.expand(); pfSyncSave(body); };
+    return sec;
+  });
+  body._pf = { secs, dirty: false };
+
+  // Saved sections start tucked away; empty ones stay open so a new DJ sees the form.
+  secs.forEach(sec => sec.def.has() ? sec.collapse() : sec.expand());
+
+  // Any edit marks the form dirty so Save can't be hidden away while changes are pending.
+  body.addEventListener('input', ()=> pfDirty(body));
+  pfSyncSave(body);
+}
+function pfDirty(body){
+  if(!body._pf) return;
+  body._pf.dirty = true;
+  pfSyncSave(body);
+}
+function pfSyncSave(body){
+  const btn = body.querySelector('#saveProfile');
+  if(!btn || !body._pf) return;
+  const anyOpen = body._pf.secs.some(s => s.isOpen());
+  btn.classList.toggle('pf-hide', !(anyOpen || body._pf.dirty));
+}
+function profileAfterSave(body){
+  if(!body._pf) return;
+  body._pf.dirty = false;
+  body._pf.secs.forEach(sec => { if(sec.def.has()) sec.collapse(); else sec.expand(); });
+  pfSyncSave(body);
+}
+// Removing a row isn't an <input> event, so it reports itself here.
+document.addEventListener('pf-dirty', ()=>{
+  const body = document.getElementById('djTabBody');
+  if(body) pfDirty(body);
+});
+
+/* ================= EDGE QUICK PANELS (v2.5.5) =================
+   Mobile only. Mounted on <body> (outside #main), so view re-renders and
+   queue polling can never wipe it or the guest's in-progress form.
+     • Guest request page, ACTIVE venue only → right-edge grip → DJ profile popup
+     • Landing / join / DJ-login / DJ-profile pages → left-edge grip → quick menu
+   Popup colours are the inverse of the app theme (see CSS). */
+const EDGE_MQ = window.matchMedia('(pointer: coarse) and (max-width: 820px)');
+const EDGE_LEFT_VIEWS = ['landing','guestJoin','djAuth','djProfile'];
+const EDGE_DJ_TTL = 60000;
+const edgeDjCache = {};   // username -> { t, dj }
+let edgeEl = null, edgeSide = null, edgeKind = null, edgeOpen = false;
+
+function edgeVenueActive(){
+  const v = State.venue;
+  if(!State.venueCode || !v) return false;
+  if(v.isLive === false) return false;
+  if(v.expiresAt && new Date(v.expiresAt).getTime() <= Date.now()) return false;
+  return true;
+}
+function edgeWanted(){
+  if(!EDGE_MQ.matches) return null;
+  if(State.view === 'guest') return (edgeVenueActive() && (State.venue.djUsername || State.venue.djName)) ? 'dj' : null;
+  if(EDGE_LEFT_VIEWS.includes(State.view)) return 'menu';
+  return null;
+}
+function edgeTeardown(){
+  if(edgeEl){ edgeEl.remove(); edgeEl = null; }
+  edgeSide = null; edgeKind = null; edgeOpen = false;
+}
+function syncEdgeUi(){
+  const kind = edgeWanted();
+  if(!kind){ edgeTeardown(); return; }
+  edgeBuild(kind);
+}
+
+/* Position is remembered per panel kind ('dj' popup / 'menu'), so the guest
+   page and the home pages can each have their own spot. y is a fraction of
+   the screen height so it survives rotation. */
+const EDGE_DEFAULT = { dj:{ side:'right', y:0.5 }, menu:{ side:'left', y:0.5 } };
+function edgeLoadPos(kind){
+  try{
+    const p = JSON.parse(localStorage.getItem('tractap_edge_' + kind) || 'null');
+    if(p && (p.side === 'left' || p.side === 'right') && typeof p.y === 'number'){
+      return { side:p.side, y:Math.min(0.92, Math.max(0.08, p.y)) };
+    }
+  }catch(_){}
+  return { ...EDGE_DEFAULT[kind] };
+}
+function edgeSavePos(kind, pos){
+  try{ localStorage.setItem('tractap_edge_' + kind, JSON.stringify(pos)); }catch(_){}
+}
+function edgeApplySide(side){
+  if(!edgeEl) return;
+  edgeSide = side;
+  edgeEl.querySelectorAll('.edge-grip, .edge-pop').forEach(el=>{
+    el.classList.remove('left','right'); el.classList.add(side);
+  });
+}
+// Keeps the popup level with the grip, but always fully on-screen.
+function edgePlace(){
+  if(!edgeEl) return;
+  const grip = edgeEl.querySelector('.edge-grip');
+  const pop = edgeEl.querySelector('.edge-pop');
+  const r = grip.getBoundingClientRect();
+  const h = pop.offsetHeight, vh = window.innerHeight;
+  pop.style.top = Math.max(12, Math.min(r.top + r.height/2 - h/2, vh - h - 12)) + 'px';
+}
+function edgeResetUi(){
+  if(!edgeEl || !edgeKind) return;
+  try{ localStorage.removeItem('tractap_edge_' + edgeKind); }catch(_){}
+  const d = EDGE_DEFAULT[edgeKind];
+  edgeApplySide(d.side);
+  edgeEl.querySelector('.edge-grip').style.top = (d.y * 100) + '%';
+  edgePlace();
+  toast('Position reset');
+}
+const EDGE_FOOT = `<div class="ep-foot"><span>Hold &amp; drag the grip to move it</span><button type="button" class="ep-reset" id="epReset">Reset</button></div>`;
+
+function edgeBuild(kind){
+  edgeTeardown();
+  edgeKind = kind;
+  const pos = edgeLoadPos(kind);
+  edgeSide = pos.side;
+  const root = document.createElement('div');
+  root.className = 'edge-ui';
+  root.innerHTML = `
+    <button type="button" class="edge-grip ${pos.side}" aria-expanded="false"
+      aria-label="${kind==='dj' ? 'Show DJ profile' : 'Show quick menu'}"><i></i></button>
+    <div class="edge-pop ${pos.side}" role="dialog"
+      aria-label="${kind==='dj' ? 'DJ profile' : 'Quick menu'}"></div>`;
+  document.body.appendChild(root);
+  edgeEl = root;
+  const grip = root.querySelector('.edge-grip');
+  const pop = root.querySelector('.edge-pop');
+  grip.style.top = (pos.y * 100) + '%';
+  grip.addEventListener('contextmenu', e=>e.preventDefault());
+
+  /* Grip gestures:
+       tap                       → open / close
+       swipe sideways            → toward screen centre opens, toward edge closes
+       drag up/down              → slide along the edge
+       hold ~0.4s, then drag     → move anywhere; snaps to the nearest edge
+     The position is saved when you let go. */
+  let sx = null, sy = 0, mode = null, timer = null, curY = pos.y;
+  const endTimer = ()=>{ if(timer){ clearTimeout(timer); timer = null; } };
+  const moveTo = (e, freeSide)=>{
+    const vh = window.innerHeight;
+    const y = Math.min(vh - 48, Math.max(48, e.clientY));
+    curY = y / vh;
+    grip.style.top = (curY * 100) + '%';
+    if(freeSide){
+      const s = e.clientX < window.innerWidth / 2 ? 'left' : 'right';
+      if(s !== edgeSide) edgeApplySide(s);
+    }
+  };
+  grip.addEventListener('pointerdown', e=>{
+    sx = e.clientX; sy = e.clientY; mode = null;
+    try{ grip.setPointerCapture(e.pointerId); }catch(_){}
+    endTimer();
+    timer = setTimeout(()=>{
+      timer = null; mode = 'free';
+      edgeSet(false);
+      grip.classList.add('moving');
+      if(navigator.vibrate) navigator.vibrate(18);
+    }, 380);
+  });
+  grip.addEventListener('pointermove', e=>{
+    if(sx === null) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if(mode === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)){
+      endTimer();
+      if(Math.abs(dy) > Math.abs(dx)){ mode = 'vert'; edgeSet(false); grip.classList.add('moving'); }
+      else mode = 'swipe';
+    }
+    if(mode === 'vert') moveTo(e, false);
+    else if(mode === 'free') moveTo(e, true);
+  });
+  grip.addEventListener('pointerup', e=>{
+    if(sx === null) return;
+    endTimer();
+    const dx = e.clientX - sx; const m = mode;
+    sx = null; mode = null;
+    grip.classList.remove('moving');
+    if(m === 'vert' || m === 'free'){ edgeSavePos(kind, { side: edgeSide, y: curY }); return; }
+    if(m === 'swipe'){ edgeSet((edgeSide === 'right' ? -dx : dx) > 0); return; }
+    edgeSet(!edgeOpen);   // plain tap
+  });
+  grip.addEventListener('pointercancel', ()=>{ endTimer(); sx = null; mode = null; grip.classList.remove('moving'); });
+  grip.addEventListener('click', e=>{ if(e.detail === 0) edgeSet(!edgeOpen); }); // keyboard activation
+
+  // Swipe the popup back toward its edge to dismiss it.
+  let px = null, py = null;
+  pop.addEventListener('pointerdown', e=>{ px = e.clientX; py = e.clientY; });
+  pop.addEventListener('pointerup', e=>{
+    if(px === null) return;
+    const dx = e.clientX - px, dy = e.clientY - py; px = null; py = null;
+    const outward = edgeSide === 'right' ? dx : -dx;
+    if(outward > 60 && Math.abs(dy) < 40) edgeSet(false);
+  });
+  pop.addEventListener('pointercancel', ()=>{ px = null; py = null; });
+}
+function edgeSet(open){
+  if(!edgeEl) return;
+  edgeOpen = !!open;
+  const grip = edgeEl.querySelector('.edge-grip');
+  const pop = edgeEl.querySelector('.edge-pop');
+  grip.classList.toggle('open', edgeOpen);
+  grip.setAttribute('aria-expanded', String(edgeOpen));
+  pop.classList.toggle('open', edgeOpen);
+  if(edgeOpen){
+    if(edgeKind === 'dj') edgePopulateDj(pop); else edgePopulateMenu(pop);
+    edgePlace();
+  }
+}
+
+/* ---- right edge: DJ profile ---- */
+function edgeDjHtml(dj, loading, canOpenFull){
+  const socials = (dj.socialLinks||[]).filter(l=>l.handle);
+  const sp = normalizeLink(dj.spotifyLink);
+  const ap = normalizeLink(dj.appleLink);
+  const row = (glyph, label, href, right) => href
+    ? `<a class="ep-item" href="${escapeHtml(href)}" target="_blank" rel="noopener"><span class="g">${glyph}</span><b>${escapeHtml(label)}</b>${right?`<span class="r">${escapeHtml(right)}</span>`:''}</a>`
+    : `<div class="ep-item"><span class="g">${glyph}</span><b>${escapeHtml(label)}</b>${right?`<span class="r">${escapeHtml(right)}</span>`:''}</div>`;
+  return `
+    <div class="ep-head">
+      ${dj.avatarUrl
+        ? `<img class="ep-av" src="${escapeHtml(dj.avatarUrl)}" alt="${escapeHtml(dj.displayName)}">`
+        : `<div class="ep-av">🎧</div>`}
+      <div class="ep-name">${escapeHtml(dj.displayName || 'DJ')}</div>
+      ${dj.bio ? `<div class="ep-bio">${escapeHtml(dj.bio)}</div>` : ''}
+    </div>
+    ${loading ? `<div class="ep-load"><div class="spinner"></div>Loading…</div>` : ''}
+    <div class="ep-list">
+      ${socials.map(l=>{
+        const href = normalizeLink(l.handle);
+        const label = href ? l.handle.replace(/^https?:\/\//i,'') : l.handle;
+        return row(socialIcon(l.platform), l.platform, href, label);
+      }).join('')}
+      ${sp ? row('🎧','Spotify playlist', sp) : ''}
+      ${ap ? row('🍎','Apple Music playlist', ap) : ''}
+    </div>
+    ${canOpenFull ? `<button type="button" class="ep-cta" id="epFull">View full profile</button>` : ''}
+    ${EDGE_FOOT}`;
+}
+async function edgePopulateDj(pop){
+  const v = State.venue || {};
+  const uname = v.djUsername || '';
+  const base = { displayName: v.djName || 'DJ', avatarUrl: v.djAvatarUrl || '', bio:'', socialLinks:[], spotifyLink:'', appleLink:'' };
+  const hit = uname ? edgeDjCache[uname] : null;
+  const fresh = hit && (Date.now() - hit.t) < EDGE_DJ_TTL;
+  const paint = (dj, loading)=>{
+    if(!edgeOpen || !pop.isConnected) return;
+    pop.innerHTML = edgeDjHtml(dj, loading, !!uname);
+    const full = pop.querySelector('#epFull');
+    if(full) full.onclick = ()=>{ edgeSet(false); stopPolling(); openDjProfile(uname, 'guest'); };
+    const rst = pop.querySelector('#epReset');
+    if(rst) rst.onclick = edgeResetUi;
+    edgePlace();
+  };
+  paint(hit ? hit.dj : base, !fresh && !!uname);
+  if(fresh || !uname) return;
+  try{
+    const data = await api(`/api/dj/${encodeURIComponent(uname)}`);
+    edgeDjCache[uname] = { t: Date.now(), dj: data.dj };
+    paint(data.dj, false);
+  }catch(e){
+    paint(hit ? hit.dj : base, false);   // fall back to what the venue already told us
+  }
+}
+
+/* ---- left edge: quick menu ---- */
+function edgePopulateMenu(pop){
+  const view = State.view;
+  const item = (id, glyph, title, sub) =>
+    `<button type="button" class="ep-item" id="${id}"><span class="g">${glyph}</span><span><b>${title}</b><small>${sub}</small></span></button>`;
+  pop.innerHTML = `
+    <div class="ep-title">TRACTAP</div>
+    <div class="ep-sub">Quick menu</div>
+    <div class="ep-list">
+      ${view !== 'landing'  ? item('epHome','🏠','Landing page','Back to the start') : ''}
+      ${view !== 'djAuth'   ? item('epLogin','🎚️','Quick DJ login', State.token ? 'Resume your dashboard' : 'Log in or sign up') : ''}
+      ${view !== 'guestJoin'? item('epJoin','🎧','Join venue','Enter a venue code') : ''}
+    </div>
+    ${EDGE_FOOT}`;
+  const rst = pop.querySelector('#epReset');
+  if(rst) rst.onclick = edgeResetUi;
+  const go = fn => ()=>{ edgeSet(false); fn(); };
+  const home = pop.querySelector('#epHome');
+  if(home) home.onclick = go(()=>{ stopPolling(); State.view = 'landing'; render(); });
+  const join = pop.querySelector('#epJoin');
+  if(join) join.onclick = go(()=>{ stopPolling(); State.view = 'guestJoin'; render(); });
+  const login = pop.querySelector('#epLogin');
+  if(login) login.onclick = go(async ()=>{
+    stopPolling();
+    if(State.token){
+      try{
+        const data = await api('/api/auth/me', { auth:true });
+        State.dj = data.dj;
+        await loadDjLiveVenueThenEnterDash();
+        return;
+      }catch(e){ localStorage.removeItem('tractap_token'); State.token = null; }
+    }
+    djAuthMode = 'login'; djAuthErr = '';
+    State.view = 'djAuth'; render();
+  });
+}
+
+// Tap anywhere outside the panel, or press Escape, to tuck it back to the edge.
+document.addEventListener('pointerdown', e=>{
+  if(edgeOpen && edgeEl && !edgeEl.contains(e.target)) edgeSet(false);
+});
+document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && edgeOpen) edgeSet(false); });
+// Rotation / resize across the mobile breakpoint.
+if(EDGE_MQ.addEventListener) EDGE_MQ.addEventListener('change', syncEdgeUi);
+// If the venue's session runs out while a guest is sitting on the page, retire the grip.
+setInterval(()=>{ if(edgeKind === 'dj' && !edgeVenueActive()) edgeTeardown(); }, 15000);
+
+/* ================= BOOT ================= */
+(async function boot(){
+  getDevice();
+  const params = new URLSearchParams(location.search);
+
+  if(params.get('reset')){
+    State.view = 'resetPassword';
+    render();
+    return;
+  }
+  if(params.get('dj')){
+    history.replaceState(null, '', location.pathname); // drop ?dj= from the URL once read
+    openDjProfile(params.get('dj'), 'landing');
+    return;
+  }
+  if(params.get('venue')){
+    State.view = 'guestJoin';
+    render();
+    return;
+  }
+
+  // No URL-driven destination — if a DJ session token survived from a
+  // previous visit (page refresh, browser reopened, etc.), restore it
+  // instead of defaulting to the landing page. This is what was
+  // previously missing: the token was already being read from
+  // localStorage into State on load, but nothing ever acted on it.
+  if(State.token){
+    try{
+      const data = await api('/api/auth/me', { auth: true });
+      State.dj = data.dj;
+      await loadDjLiveVenueThenEnterDash();
+      return;
+    }catch(e){
+      // Token expired/invalid — clear it quietly and fall through to landing.
+      localStorage.removeItem('tractap_token');
+      State.token = null;
+    }
+  }
+
+  render();
+})();
+
+// Mobile browsers throttle or fully pause setInterval timers once a tab
+// is backgrounded (screen locked, app-switched away from) — the queue can
+// go stale until something wakes it back up. Force an immediate refresh
+// the moment the tab becomes visible again, on top of the normal interval.
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) return;
+  unseenCount = 0;
+  document.title = BASE_TITLE;
+  if(State.view === 'guest' && State.venueCode){
+    api(`/api/venues/${State.venueCode}/requests`)
+      .then(data => { State.queue = data.requests; renderGuestQueueList(); })
+      .catch(()=>{});
+    beginGuestPolling();
+  }else if(State.view === 'djDash' && State.venueCode){
+    beginDjQueuePolling();
+  }
+});
+
+// Watchdog: if the DJ queue poll loop has died or stalled (timer lost while
+// backgrounded, a hung request, etc.), restart it. Cheap no-op when healthy.
+setInterval(() => {
+  if(document.hidden) return;
+  if(State.view === 'djDash' && State.venueCode){
+    if(!pollTimer || Date.now() - djLastOk > 15000){
+      djPollInFlight = false;
+      beginDjQueuePolling();
+    }
+  }
+}, 8000);
+
+// Register the service worker for installability (PWA/APK). Static shell
+// only — API calls always bypass it, so the live
+// queue is never served stale from cache.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{ /* non-fatal */ });
+  });
+}
+
+})();
+</script>
+</body>
+</html>

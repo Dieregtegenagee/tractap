@@ -1,80 +1,61 @@
-# tractap
-TRACTAP is a live DJ song-request platform.
+# TRACTAP on GitHub Pages
 
-# TRACTAP frontend
+This folder is a ready-to-publish static build of the TRACTAP frontend. It has
+no Node.js build step and can be deployed directly by GitHub Pages.
 
-Plain HTML/CSS/JS — no build step. Talks to the `tractap-backend-php` API over REST,
-and refreshes the live queue by polling every 3.5s (no persistent WebSocket needed,
-so it runs fine on shared hosting).
+The PHP API is configured separately for Render. The repository root contains
+`render.yaml` and `api.eunic.co.za/Dockerfile` for deploying it as a Docker web
+service.
 
-## 1. Point it at your backend
+## Publish
 
-Edit `config.js`:
+In the repository settings, open **Pages**, choose **Deploy from a branch**,
+select the branch containing this folder, and choose `/docs` as the folder.
+GitHub Pages will publish the app at a URL similar to:
 
-```js
-window.TRACTAP_API_BASE = "https://your-domain.com/api/";
-window.TRACTAP_APP_URL = "https://your-domain.com/tractap/";
-window.TRACTAP_GOOGLE_CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com";
+```text
+https://OWNER.github.io/REPOSITORY/
 ```
 
-Leave `TRACTAP_GOOGLE_CLIENT_ID` as the placeholder to keep the "Sign in with Google"
-button hidden until you've set it up (see the backend README's Google Sign-In section).
+The app URL is detected automatically, including repository deployments that
+live below the domain root.
 
-## 2. Run it locally
+## Backend requirement
 
-Any static file server works — you can't just double-click `index.html` because the
-browser will block `fetch` from a `file://` origin. Easiest:
+The Pages build calls `https://tractap-api.onrender.com` by default. If Render
+assigns a different URL, update `config.js`. The Render service must allow the
+exact GitHub Pages origin through the `ALLOWED_ORIGIN` environment variable.
 
-```bash
-npx serve .
-# or
-python3 -m http.server 5173
+```php
+ALLOWED_ORIGIN=https://OWNER.github.io
 ```
 
-## 3. Deploy
+For a project site, the origin is still only `https://OWNER.github.io`; the
+repository path is not part of the origin. If a custom domain is configured,
+use that domain instead. Keep the API's production JWT secret and database
+credentials out of this repository.
 
-Static site — upload `index.html`, `config.js`, `manifest.json`, `sw.js`, and `icons/`
-to a folder cPanel serves directly, e.g. `public_html/tractap_public/`. No build step,
-no CORS concerns if it's on the same domain as the backend.
+## Deploy the API to Render
 
-## What's wired up
+1. Push this repository to GitHub.
+2. In Render, choose **New → Blueprint** and select the repository.
+3. Render will read `render.yaml` and build the PHP API from
+   `api.eunic.co.za/Dockerfile`.
+4. Add the MySQL connection values and a long random `JWT_SECRET` as prompted.
+5. Set `APP_URL` to the published GitHub Pages URL and
+   `BACKEND_PUBLIC_URL` to the Render service URL.
+6. Confirm `https://YOUR-RENDER-URL/api/health` returns JSON with `ok: true`.
 
-- Guest join → `GET /api/venues/:code`, live queue via `GET /api/venues/:code/requests`,
-  refreshed by polling
-- Song requests, voting → `POST` endpoints, with the device id persisted in
-  `localStorage` (`tractap_device`) so a guest's vote/rate-limit state survives a
-  refresh
-- DJ signup/login (email + username + password) → JWT stored in `localStorage`
-  (`tractap_token`); dashboard restores the DJ's active venue automatically on login
-- **Sign in with Google** — renders automatically once `TRACTAP_GOOGLE_CLIENT_ID` is
-  set; same login/signup outcome as the email flow, accounts auto-link by email
-- **Forgot password** — link on the login screen → email → backend sends a reset link
-  → `?reset=TOKEN` in the URL triggers the in-app "set new password" screen
-- **Profile picture** — upload in the DJ Profile tab; shown next to the venue name on
-  the guest-facing join/queue page
-- Venue creation, QR code (generated client-side against the share link), analytics,
-  and CSV export all call their matching backend routes directly
+Render does not provide a built-in MySQL database for this service definition;
+use an external MySQL-compatible database and copy its connection values into
+the Render environment variables. Uploaded avatars on an ephemeral container
+should also be moved to object storage before production use.
 
-## Installing as an app / building an APK
+## Optional configuration
 
-This is a PWA (`manifest.json` + `sw.js` + `icons/`), which both "Add to Home Screen"
-and a real Android APK build on top of.
+Edit `config.js` to set a Google OAuth client ID. The placeholder intentionally
+keeps Google sign-in hidden until the OAuth client is configured for the Pages
+origin.
 
-**PWABuilder (no local tooling)** — deploy with HTTPS, paste the live URL into
-pwabuilder.com, download the generated Android package.
-
-**Bubblewrap / Trusted Web Activity** (for a real Play Store listing):
-```bash
-npm install -g @bubblewrap/cli
-bubblewrap init --manifest=https://your-domain.com/tractap_public/manifest.json
-bubblewrap build
-```
-
-## Known gaps to close before a real launch
-
-- No payment/upgrade flow from `trial` → `pro` plan — the backend has the `plan`
-  column ready, but there's no billing integration (Stripe, etc.) wired to flip it.
-- Spotify/Apple Music fields are plain links, not live catalog search — that needs
-  OAuth app registrations with each platform.
-- Password-reset emails depend on the host's `mail()` working reliably — see the
-  backend README's caveats on that.
+The service worker and manifest use relative URLs, so PWA installation works
+from both a repository site and a custom-domain site.
